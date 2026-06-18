@@ -319,7 +319,7 @@ try {
 } catch (err) {
   console.error('Gagal memuat konfigurasi Firebase:', err);
   document.getElementById('screen-loading').innerHTML =
-    '<p style="padding:24px;text-align:center;color:#F8FAFC;font-size:14px;line-height:1.5;">Gagal memuat konfigurasi. Pastikan Environment Variables sudah diatur di Vercel, lalu muat ulang halaman.</p>';
+    '<p style="padding:24px;text-align:center;color:#F8FAFC;font-size:14px;line-height:1.5;">Gagal memuat konfigurasi (' + (err.message || 'error tidak diketahui') + '). Pastikan Environment Variables sudah diatur di Vercel, lalu muat ulang halaman.</p>';
   throw err;
 }
 
@@ -362,7 +362,7 @@ el('btn-login').addEventListener('click', async () => {
   try {
     await signInWithPopup(auth, provider);
   } catch (err) {
-    showToast('Masuk gagal. Periksa koneksi internet dan coba lagi.');
+    showToast('Masuk gagal: ' + (err.code || err.message || 'tidak diketahui'));
     console.error(err);
   }
 });

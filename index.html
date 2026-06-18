@@ -309,17 +309,19 @@ import {
   getDatabase, ref, push, set, onValue, remove, update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// ====== GANTI BAGIAN INI DENGAN CONFIG FIREBASE KAMU ======
-const firebaseConfig = {
-  apiKey: "GANTI_API_KEY",
-  authDomain: "GANTI_AUTH_DOMAIN",
-  databaseURL: "GANTI_DATABASE_URL",
-  projectId: "GANTI_PROJECT_ID",
-  storageBucket: "GANTI_STORAGE_BUCKET",
-  messagingSenderId: "GANTI_SENDER_ID",
-  appId: "GANTI_APP_ID"
-};
-// ============================================================
+// Config Firebase TIDAK ditulis di sini. Diambil dari endpoint /api/firebase-config,
+// yang membaca Environment Variables dari dashboard Vercel (lihat folder /api).
+let firebaseConfig;
+try {
+  const configRes = await fetch('/api/firebase-config');
+  if (!configRes.ok) throw new Error('Status ' + configRes.status);
+  firebaseConfig = await configRes.json();
+} catch (err) {
+  console.error('Gagal memuat konfigurasi Firebase:', err);
+  document.getElementById('screen-loading').innerHTML =
+    '<p style="padding:24px;text-align:center;color:#F8FAFC;font-size:14px;line-height:1.5;">Gagal memuat konfigurasi. Pastikan Environment Variables sudah diatur di Vercel, lalu muat ulang halaman.</p>';
+  throw err;
+}
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);

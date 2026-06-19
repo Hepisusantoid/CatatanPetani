@@ -9,17 +9,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg-deep:#1E1750;--bg-mid:#4338CA;--bg-bright:#7C3AED;
-  --glass:rgba(255,255,255,0.10);--glass-strong:rgba(255,255,255,0.16);--glass-soft:rgba(255,255,255,0.06);
-  --border-glass:rgba(255,255,255,0.22);
-  --text-1:#F8FAFC;--text-2:rgba(248,250,252,0.66);--text-3:rgba(248,250,252,0.40);
-  --green:#34D399;--green-deep:#10B981;--orange:#FB923C;--gold:#FBBF24;
-  --danger:#F87171;--blue:#60A5FA;
-  --r-lg:26px;--r-md:18px;--r-sm:12px;--blur:22px;
+  --bg-deep:#150d3a;--bg-mid:#2e1a8a;--bg-bright:#4c1d95;
+  --glass:rgba(255,255,255,0.09);--glass-strong:rgba(255,255,255,0.15);--glass-soft:rgba(255,255,255,0.05);
+  --border-glass:rgba(255,255,255,0.18);
+  --text-1:#F8FAFC;--text-2:rgba(248,250,252,0.62);--text-3:rgba(248,250,252,0.36);
+  --green:#30D158;--green-deep:#25a244;--orange:#FF9F0A;--gold:#FFD60A;
+  --danger:#FF453A;--blue:#60A5FA;--purple:#BF5AF2;
+  --r-lg:26px;--r-md:18px;--r-sm:12px;--blur:28px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;}
-body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(circle at 18% 12%,rgba(124,58,237,.55),transparent 45%),radial-gradient(circle at 85% 78%,rgba(52,211,153,.18),transparent 40%),linear-gradient(165deg,var(--bg-deep) 0%,var(--bg-mid) 50%,var(--bg-bright) 100%);background-attachment:fixed;color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;background:radial-gradient(ellipse at 20% 0%,rgba(88,28,220,.6),transparent 55%),radial-gradient(ellipse at 85% 80%,rgba(48,209,88,.15),transparent 45%),linear-gradient(170deg,var(--bg-deep) 0%,var(--bg-mid) 45%,var(--bg-bright) 100%);background-attachment:fixed;color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased;}
 .blob{position:fixed;border-radius:50%;filter:blur(50px);opacity:.45;z-index:0;pointer-events:none;}
 .blob-a{width:260px;height:260px;background:var(--green);top:-60px;left:-80px;animation:drift1 26s ease-in-out infinite alternate;}
 .blob-b{width:220px;height:220px;background:var(--orange);bottom:10%;right:-90px;animation:drift2 30s ease-in-out infinite alternate;}
@@ -1125,4 +1125,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-  </html>
+</html>

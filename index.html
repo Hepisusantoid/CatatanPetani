@@ -26,7 +26,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',syste
 @keyframes drift1{from{transform:translate(0,0)}to{transform:translate(40px,60px)}}
 @keyframes drift2{from{transform:translate(0,0)}to{transform:translate(-30px,-50px)}}
 #app{position:relative;z-index:1;max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
-.glass{background:var(--glass);backdrop-filter:blur(var(--blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--blur)) saturate(160%);border:1px solid var(--border-glass);box-shadow:0 8px 30px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.12);}
+.glass{background:rgba(255,255,255,.09);backdrop-filter:blur(var(--blur)) saturate(180%);-webkit-backdrop-filter:blur(var(--blur)) saturate(180%);border:1px solid rgba(255,255,255,.16);position:relative;}
+.glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,.22);border-radius:inherit;pointer-events:none;z-index:1;}
 
 /* Loading */
 #s-loading{flex:1;display:flex;align-items:center;justify-content:center;}
@@ -42,34 +43,68 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',syste
 .btn-google:active{transform:scale(.96);}
 
 /* Header */
-header.glass{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;gap:10px;border-radius:0 0 var(--r-md) var(--r-md);}
-.hdr-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
-.btn-back{width:36px;height:36px;border-radius:50%;background:var(--glass-strong);border:1px solid var(--border-glass);display:flex;align-items:center;justify-content:center;color:var(--text-1);font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;}
-.hdr-title{font-size:17px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.hdr-sub{font-size:12px;color:var(--text-2);margin-top:1px;}
-.avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.4);cursor:pointer;background:rgba(255,255,255,.15);flex-shrink:0;}
+header.glass{position:sticky;top:0;z-index:10;padding:0 16px 14px;border-radius:0 0 22px 22px;border-top:none;}
+header.glass::before{display:none;}
+.hdr-status{display:flex;justify-content:space-between;align-items:center;padding:13px 0 4px;}
+.hdr-time{font-size:13px;font-weight:700;letter-spacing:-.2px;}
+.hdr-icons{display:flex;align-items:center;gap:5px;}
+.hdr-back-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.btn-back{display:inline-flex;align-items:center;gap:4px;color:var(--green);font-size:13px;font-weight:500;background:none;border:none;cursor:pointer;padding:0;letter-spacing:-.1px;}
+.btn-back svg{stroke:var(--green);fill:none;flex-shrink:0;}
+.hdr-title-lg{font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.1;}
+.hdr-sub{font-size:12px;color:var(--text-2);margin-top:2px;font-weight:400;}
+.hdr-home-row{display:flex;align-items:center;justify-content:space-between;}
+.brand-home{display:flex;align-items:center;gap:10px;}
+.brand-title{font-size:26px;font-weight:800;letter-spacing:-.6px;}
+.avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.35);cursor:pointer;background:rgba(255,255,255,.12);flex-shrink:0;}
 
 /* Main */
 #s-main{flex:1;display:flex;flex-direction:column;}
-#view{flex:1;padding:18px 16px 100px;display:flex;flex-direction:column;gap:14px;}
+#view{flex:1;padding:14px 15px 110px;display:flex;flex-direction:column;gap:14px;}
+
+/* Tab bar */
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(18,10,50,.75);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);border-top:1px solid rgba(255,255,255,.12);padding:8px 0 calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:space-around;z-index:20;}
+.tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 20px;cursor:pointer;opacity:.38;transition:opacity .15s;}
+.tab-item.active{opacity:1;}
+.tab-item svg{stroke:currentColor;fill:none;stroke-width:1.8;}
+.tab-item span{font-size:9.5px;font-weight:600;letter-spacing:-.1px;}
+.tab-item.active{color:var(--green);}
+.tab-item:not(.active){color:rgba(255,255,255,.65);}
 
 /* Section label */
-.sec-label{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.07em;margin-top:4px;}
+.sec-label{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
 #cat-list,#season-list,#lahan-list{display:flex;flex-direction:column;gap:12px;}
 
-/* Category / Season cards */
-.cat-card{border-radius:var(--r-md);padding:15px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .15s,background .15s;animation:riseIn .3s ease both;}
-.cat-card:active{transform:scale(.97);background:var(--glass-strong);}
-.season-card{border-radius:var(--r-md);padding:18px;display:block;cursor:pointer;transition:transform .15s;animation:riseIn .3s ease both;}
-.season-card:active{transform:scale(.98);}
-.cat-icon{width:46px;height:46px;border-radius:14px;background:var(--glass-strong);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
-.cat-info{flex:1;min-width:0;}
-.cat-info h3,.season-info h3{font-size:16px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cat-info span,.season-info span{font-size:13px;color:var(--text-2);}
-.card-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
-.btn-icon{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;}
-.btn-icon:active{background:rgba(255,255,255,.2);}
-.btn-icon.danger:active{background:rgba(248,113,113,.2);}
+/* FAB */
+.fab{position:fixed;bottom:76px;right:calc(50% - 196px);width:54px;height:54px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;border:none;color:#06281d;font-size:26px;cursor:pointer;z-index:21;transition:transform .15s;}
+.fab:active{transform:scale(.9);}
+@media(max-width:430px){.fab{right:18px;}}
+
+/* Category iOS grouped list */
+.ios-group{border-radius:var(--r-md);overflow:hidden;animation:riseIn .3s ease both;}
+.ios-row{display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;transition:background .12s;position:relative;}
+.ios-row:active{background:rgba(255,255,255,.08);}
+.ios-row-divider{height:1px;background:rgba(255,255,255,.07);margin:0 14px;}
+.ios-cat-ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:1px solid rgba(255,255,255,.1);}
+.ico-green{background:rgba(48,209,88,.2);}
+.ico-orange{background:rgba(255,159,10,.2);}
+.ico-blue{background:rgba(96,165,250,.2);}
+.ico-purple{background:rgba(191,90,242,.2);}
+.ico-teal{background:rgba(52,211,153,.2);}
+.ico-default{background:rgba(255,255,255,.1);}
+.ios-cat-info{flex:1;min-width:0;}
+.ios-cat-name{font-size:15px;font-weight:600;letter-spacing:-.2px;}
+.ios-cat-sub{font-size:12px;color:var(--text-2);margin-top:1px;}
+.ios-chev{color:rgba(255,255,255,.22);font-size:18px;flex-shrink:0;}
+.ios-add-row{display:flex;align-items:center;gap:11px;padding:13px 14px;cursor:pointer;border:1.5px dashed rgba(48,209,88,.3);border-radius:var(--r-md);background:rgba(48,209,88,.05);animation:riseIn .3s ease both;transition:background .12s;}
+.ios-add-row:active{background:rgba(48,209,88,.1);}
+.ios-add-ico{width:40px;height:40px;border-radius:11px;background:rgba(48,209,88,.15);border:1px solid rgba(48,209,88,.25);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--green);font-weight:300;flex-shrink:0;}
+
+/* Season cards */
+.season-card{border-radius:var(--r-md);padding:16px;display:block;cursor:pointer;transition:transform .15s;animation:riseIn .3s ease both;}
+.season-card:active{transform:scale(.985);}
+.btn-icon{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;}
+.btn-icon:active{background:rgba(255,255,255,.18);}
 .chev{color:var(--text-3);font-size:20px;}
 
 /* Season stats */
@@ -208,11 +243,6 @@ header.glass{position:sticky;top:0;z-index:10;display:flex;align-items:center;ju
 .add-log-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
 .add-log-grid .field-group.full{grid-column:1/-1;}
 
-/* FAB */
-.fab{position:fixed;bottom:26px;right:calc(50% - 193px);width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--green) 0%,var(--green-deep) 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(16,185,129,.45);border:none;color:#06281d;font-size:28px;cursor:pointer;z-index:20;transition:transform .15s;}
-.fab:active{transform:scale(.9);}
-@media(max-width:430px){.fab{right:22px;}}
-
 /* Modals */
 .overlay{position:fixed;inset:0;background:rgba(10,6,30,.55);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;z-index:30;}
 .overlay.active{display:flex;}
@@ -287,6 +317,20 @@ header.glass{position:sticky;top:0;z-index:10;display:flex;align-items:center;ju
     <header class="glass" id="hdr"></header>
     <div id="view"></div>
     <button class="fab" id="fab">+</button>
+    <nav class="tab-bar" id="tab-bar">
+      <div class="tab-item active" id="tab-home" onclick="if(VS.view!=='home')navigate('home')">
+        <svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Beranda</span>
+      </div>
+      <div class="tab-item" id="tab-calendar">
+        <svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Jadwal</span>
+      </div>
+      <div class="tab-item" id="tab-profile" onclick="if(confirm('Keluar dari Catatan Petani?'))signOut(auth)">
+        <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+        <span>Profil</span>
+      </div>
+    </nav>
   </div>
 
   <!-- Modal: Category -->
@@ -485,23 +529,56 @@ function renderHeader(){
   const onHome=VS.view==='home';
   const onSeasons=VS.view==='seasons';
   const onDetail=VS.view==='season-detail';
-  let left='';
-  if(!onHome){
-    left=`<button class="btn-back" id="btn-back">←</button>`;
-  }else{
-    left=`<div style="display:flex;align-items:center;gap:8px">
-      <svg width="28" height="28" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="23" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.22)"/><path d="M24 33V20" stroke="#34D399" stroke-width="2.6" stroke-linecap="round"/><path d="M24 22c0-5-6-7.5-10-6-1 6 3.5 10 10 6z" fill="#34D399"/><path d="M24 26c0-5 6-7.5 10-6 1 6-3.5 10-10 6z" fill="#6EE7B7"/></svg>
-      <span style="font-size:17px;font-weight:700">Catatan Petani</span>
+
+  const statusBar=`<div class="hdr-status">
+    <span class="hdr-time">${new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span>
+    <div class="hdr-icons">
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><rect x="0" y="4" width="3" height="7" rx="1" fill="white" opacity=".4"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="1" fill="white" opacity=".6"/><rect x="9" y="0" width="3" height="11" rx="1" fill="white" opacity=".8"/><rect x="13" y="0" width="3" height="11" rx="1" fill="white"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="3.5" stroke="white" stroke-opacity=".35"/><rect x="23" y="3.5" width="2.5" height="5" rx="1.2" fill="white" fill-opacity=".35"/><rect x="2" y="2" width="15" height="8" rx="2" fill="white"/></svg>
+    </div>
+  </div>`;
+
+  if(onHome){
+    h.innerHTML=statusBar+`<div class="hdr-home-row">
+      <div class="brand-home">
+        <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="23" fill="rgba(48,209,88,0.15)" stroke="rgba(48,209,88,0.35)" stroke-width="1.5"/>
+          <path d="M24 34V19" stroke="#30D158" stroke-width="2.8" stroke-linecap="round"/>
+          <path d="M24 22c0-5.5-6.5-8-11-6.5-1 6.5 3.5 10.5 11 6.5z" fill="#30D158"/>
+          <path d="M24 27c0-5.5 6.5-8 11-6.5 1 6.5-3.5 10.5-11 6.5z" fill="rgba(48,209,88,0.65)"/>
+          <circle cx="24" cy="34" r="1.5" fill="#30D158"/>
+        </svg>
+        <div>
+          <div class="brand-title">Catatan Petani</div>
+          <div class="hdr-sub">Manajemen Tani Digital</div>
+        </div>
+      </div>
+      <img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">
     </div>`;
+  } else {
+    const backLabel=onSeasons?'Beranda':esc(VS.catName);
+    h.innerHTML=statusBar+`<div class="hdr-back-row">
+      <button class="btn-back" id="btn-back">
+        <svg width="8" height="14" viewBox="0 0 8 14"><polyline points="7 1 1 7 7 13" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        ${backLabel}
+      </button>
+      <img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">
+    </div>
+    <div class="hdr-title-lg">${onSeasons?esc(VS.catName):esc(VS.seasonName)}</div>
+    ${onDetail?`<div class="hdr-sub">${esc(VS.catName)}</div>`:`<div class="hdr-sub">Musim Tanam</div>`}`;
+    el('btn-back').addEventListener('click',()=>{
+      if(onDetail)navigate('seasons',{});
+      else navigate('home');
+    });
   }
-  let title='';
-  if(onSeasons)title=`<div><div class="hdr-title">${esc(VS.catName)}</div><div class="hdr-sub">Musim Tanam</div></div>`;
-  if(onDetail)title=`<div><div class="hdr-title">${esc(VS.seasonName)}</div><div class="hdr-sub">${esc(VS.catName)}</div></div>`;
-  h.innerHTML=`<div class="hdr-left">${left}${title}</div><img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">`;
-  if(!onHome)el('btn-back').addEventListener('click',()=>{
-    if(onDetail)navigate('seasons',{});
-    else navigate('home');
+  // Update tab bar active state
+  ['home','calendar','profile'].forEach(t=>{
+    const tb=el('tab-'+t);
+    if(tb)tb.classList.toggle('active',t==='home'&&onHome);
   });
+  // ensure Beranda tab always highlighted for sub-pages too
+  const thome=el('tab-home');
+  if(thome)thome.classList.add('active');
 }
 
 function renderView(){
@@ -530,21 +607,46 @@ function renderHome(container){
   allUnsubs.push(unsub);
 }
 
+function icoClass(icon){
+  const greens=['🌾','🌿','🌱','🥦','🥬','🍃','🫛'];
+  const oranges=['🌽','🍊','🥕','🧡','🍅'];
+  const blues=['🐟','💧','🌊','🐠'];
+  const purples=['🧅','🌸','🫐','🍇'];
+  if(greens.some(e=>icon?.includes(e)))return'ico-green';
+  if(oranges.some(e=>icon?.includes(e)))return'ico-orange';
+  if(blues.some(e=>icon?.includes(e)))return'ico-blue';
+  if(purples.some(e=>icon?.includes(e)))return'ico-purple';
+  return'ico-teal';
+}
+
 function renderCatList(){
   const list=el('cat-list');if(!list)return;
   const ids=Object.keys(localCats).sort((a,b)=>(localCats[a].order||0)-(localCats[b].order||0));
-  if(!ids.length){list.innerHTML=`<div class="empty"><div class="emoji">🌱</div><p>Belum ada kategori. Ketuk + untuk membuat kategori pertama — padi, jagung, atau tanaman apa saja.</p></div>`;return;}
-  list.innerHTML=ids.map(id=>{
+  if(!ids.length){
+    list.innerHTML=`<div class="empty"><div class="emoji">🌱</div><p>Belum ada kategori. Ketuk + untuk membuat kategori pertama — padi, jagung, atau tanaman apa saja.</p></div>`;
+    return;
+  }
+  const rows=ids.map((id,i)=>{
     const c=localCats[id];
-    return`<div class="cat-card glass" onclick="openCategory('${id}')">
-      <div class="cat-icon">${c.icon||'📦'}</div>
-      <div class="cat-info"><h3>${esc(c.name)}</h3><span>${c.seasonCount||0} musim tanam</span></div>
-      <div class="card-actions">
-        <div class="btn-icon" onclick="event.stopPropagation();openCatModal('${id}')">✏️</div>
-        <div class="chev">›</div>
+    return`${i>0?'<div class="ios-row-divider"></div>':''}
+    <div class="ios-row" onclick="openCategory('${id}')">
+      <div class="ios-cat-ico ${icoClass(c.icon||'')}">${c.icon||'📦'}</div>
+      <div class="ios-cat-info">
+        <div class="ios-cat-name">${esc(c.name)}</div>
+        <div class="ios-cat-sub">${c.seasonCount||0} musim tanam</div>
       </div>
+      <div class="btn-icon" onclick="event.stopPropagation();openCatModal('${id}')" style="width:30px;height:30px;border-radius:8px;font-size:13px;">✏️</div>
+      <span class="ios-chev">›</span>
     </div>`;
   }).join('');
+  list.innerHTML=`<div class="glass ios-group">${rows}</div>
+  <div class="ios-add-row" onclick="openCatModal(null)">
+    <div class="ios-add-ico">＋</div>
+    <div class="ios-cat-info">
+      <div class="ios-cat-name" style="color:var(--green)">Tambah Kategori Baru</div>
+      <div class="ios-cat-sub">Sawah, kandang, kolam, kebun...</div>
+    </div>
+  </div>`;
 }
 
 window.openCategory=function(catId){

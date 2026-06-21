@@ -392,7 +392,7 @@ header.glass::before{display:none;}
     <div id="view"></div>
     <button class="fab" id="fab">+</button>
     <nav class="tab-bar" id="tab-bar">
-      <div class="tab-item active" id="tab-home" onclick="if(VS.view!=='home')navigate('home')">
+      <div class="tab-item active" id="tab-home" onclick="navigate('home')">
         <svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>Beranda</span>
       </div>
@@ -470,6 +470,36 @@ header.glass::before{display:none;}
       </div>
       <button class="btn-primary" id="btn-do-import">Import Lahan Dipilih</button>
       <button class="btn-cancel" id="btn-cancel-import">Batal</button>
+    </div>
+  </div>
+
+  <!-- Modal: Quick Add Perawatan (dari Jadwal) -->
+  <div class="overlay" id="ov-quick-log">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h3>Tambah Catatan Perawatan</h3>
+      <div id="quick-lahan-info" style="display:flex;align-items:center;gap:8px;background:rgba(48,209,88,.1);border:1px solid rgba(48,209,88,.2);border-radius:10px;padding:10px 12px;margin-bottom:16px;">
+        <span style="font-size:18px" id="quick-cat-icon">🌾</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff" id="quick-lahan-name">—</div>
+          <div style="font-size:11px;color:var(--text-2)" id="quick-season-name">—</div>
+        </div>
+      </div>
+      <div class="sheet-field"><label>Tanggal</label><input type="date" id="quick-log-tgl"></div>
+      <div class="sheet-field"><label>Jenis Kegiatan</label>
+        <select id="quick-log-jenis" onchange="onQuickJenisChange()">
+          <option>Penyemprotan</option>
+          <option>Pemupukan</option>
+          <option>Penyiangan</option>
+          <option>Pengairan</option>
+          <option>Pengendalian Hama</option>
+          <option>Lainnya</option>
+        </select>
+      </div>
+      <div class="sheet-field" id="quick-custom-wrap" style="display:none"><label>Nama Kegiatan</label><input type="text" id="quick-log-custom" placeholder="Ketik jenis kegiatan..."></div>
+      <div class="sheet-field"><label>Catatan</label><textarea id="quick-log-cat" rows="3" placeholder="Tulis detail kegiatan, kondisi, atau temuan di lapangan..."></textarea></div>
+      <button class="btn-primary" id="btn-save-quick-log">Simpan Catatan</button>
+      <button class="btn-cancel" id="btn-cancel-quick-log">Batal</button>
     </div>
   </div>
 
@@ -1364,7 +1394,7 @@ async function renderJadwal(container){
             <div class="cl-dot ${dotC}"></div>
             <span class="cl-txt">${lastTxt}</span>
           </div>
-          <div class="crop-quick" onclick="quickAddLog('${lahanId}','${seasonId}')">＋ Catat</div>
+          <div class="crop-quick" onclick="quickAddLog('${lahanId}','${seasonId}','${esc(catIcon)}','${esc(lahan.name||'(tanpa nama)')}','${esc(seasonName)}')">＋ Catat</div>
         </div>`;
       sec1.appendChild(card);
     });
@@ -1412,14 +1442,39 @@ async function renderJadwal(container){
   }
 }
 
-window.quickAddLog=function(lahanId,seasonId){
-  // Buka overlay note langsung dengan lahanId yang sudah diisi
-  VS.seasonId=seasonId;
-  activeCatId=lahanId;
-  openNoteModal(null,null);
-  // simpan lahanId ke state sementara
+window.quickAddLog=function(lahanId,seasonId,catIcon,lahanName,seasonName){
   _quickLahanId=lahanId;
+  _quickSeasonId=seasonId;
+  const ni=el('quick-cat-icon'),nn=el('quick-lahan-name'),ns=el('quick-season-name');
+  if(ni)ni.textContent=catIcon||'🌾';
+  if(nn)nn.textContent=lahanName||'(tanpa nama)';
+  if(ns)ns.textContent=seasonName||'';
+  el('quick-log-tgl').value=todayStr();
+  el('quick-log-jenis').value='Penyemprotan';
+  el('quick-custom-wrap').style.display='none';
+  el('quick-log-cat').value='';
+  openOverlay('ov-quick-log');
 };
+window.onQuickJenisChange=function(){
+  const v=el('quick-log-jenis')?.value;
+  const w=el('quick-custom-wrap');
+  if(w)w.style.display=v==='Lainnya'?'block':'none';
+};
+el('btn-save-quick-log').addEventListener('click',async()=>{
+  const tgl=el('quick-log-tgl')?.value;
+  let jenis=el('quick-log-jenis')?.value||'Lainnya';
+  if(jenis==='Lainnya'){jenis=el('quick-log-custom')?.value.trim()||'';if(!jenis){showToast('Ketik nama kegiatan.');return;}}
+  if(!tgl){showToast('Pilih tanggal.');return;}
+  const catatan=el('quick-log-cat')?.value.trim()||'';
+  if(!_quickLahanId){showToast('Data lahan tidak ditemukan.');return;}
+  const logRef=push(ref(db,`users/${uid}/perawatan/${_quickLahanId}`));
+  await set(logRef,{tanggal:tgl,jenis,catatan,createdAt:Date.now()});
+  closeOverlay('ov-quick-log');
+  showToast('✓ Catatan perawatan disimpan.');
+  // refresh jadwal
+  if(VS.view==='jadwal'){cleanView();renderView();}
+});
+el('btn-cancel-quick-log').addEventListener('click',()=>closeOverlay('ov-quick-log'));
 let _quickLahanId=null;
 function openCatModal(catId){
   editingCatId=catId;

@@ -3,26 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#3B2E7E">
+<meta name="theme-color" content="#08041e">
 <title>Catatan Petani</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='23' fill='%23150d3a' stroke='%2330D158' stroke-width='2'/%3E%3Cpath d='M24 34V19' stroke='%2330D158' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M24 22c0-5.5-6.5-8-11-6.5-1 6.5 3.5 10.5 11 6.5z' fill='%2330D158'/%3E%3Cpath d='M24 27c0-5.5 6.5-8 11-6.5 1 6.5-3.5 10.5-11 6.5z' fill='%2330D15899'/%3E%3Ccircle cx='24' cy='34' r='1.8' fill='%2330D158'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg-deep:#150d3a;--bg-mid:#2e1a8a;--bg-bright:#4c1d95;
-  --glass:rgba(255,255,255,0.09);--glass-strong:rgba(255,255,255,0.15);--glass-soft:rgba(255,255,255,0.05);
-  --border-glass:rgba(255,255,255,0.18);
+  --bg-deep:#06031a;--bg-mid:#100848;--bg-bright:#1e0d6b;
+  --glass:rgba(255,255,255,0.08);--glass-strong:rgba(255,255,255,0.14);--glass-soft:rgba(255,255,255,0.04);
+  --border-glass:rgba(255,255,255,0.15);
   --text-1:#F8FAFC;--text-2:rgba(248,250,252,0.62);--text-3:rgba(248,250,252,0.36);
   --green:#30D158;--green-deep:#25a244;--orange:#FF9F0A;--gold:#FFD60A;
   --danger:#FF453A;--blue:#60A5FA;--purple:#BF5AF2;
-  --r-lg:26px;--r-md:18px;--r-sm:12px;--blur:28px;
+  --r-lg:26px;--r-md:18px;--r-sm:12px;--blur:32px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;background:radial-gradient(ellipse at 20% 0%,rgba(88,28,220,.6),transparent 55%),radial-gradient(ellipse at 85% 80%,rgba(48,209,88,.15),transparent 45%),linear-gradient(170deg,var(--bg-deep) 0%,var(--bg-mid) 45%,var(--bg-bright) 100%);background-attachment:fixed;color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased;}
-.blob{position:fixed;border-radius:50%;filter:blur(50px);opacity:.45;z-index:0;pointer-events:none;}
-.blob-a{width:260px;height:260px;background:var(--green);top:-60px;left:-80px;animation:drift1 26s ease-in-out infinite alternate;}
-.blob-b{width:220px;height:220px;background:var(--orange);bottom:10%;right:-90px;animation:drift2 30s ease-in-out infinite alternate;}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;background:radial-gradient(ellipse at 22% 0%,rgba(72,20,180,.55),transparent 50%),radial-gradient(ellipse at 80% 85%,rgba(48,209,88,.1),transparent 40%),linear-gradient(170deg,var(--bg-deep) 0%,var(--bg-mid) 50%,var(--bg-bright) 100%);background-attachment:fixed;color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.42);}
+select option{background:#12083a;}
+.blob{position:fixed;border-radius:50%;filter:blur(60px);opacity:.3;z-index:0;pointer-events:none;}
+.blob-a{width:280px;height:280px;background:var(--green);top:-70px;left:-90px;animation:drift1 28s ease-in-out infinite alternate;}
+.blob-b{width:240px;height:240px;background:#5b21b6;bottom:8%;right:-100px;animation:drift2 32s ease-in-out infinite alternate;}
 @keyframes drift1{from{transform:translate(0,0)}to{transform:translate(40px,60px)}}
 @keyframes drift2{from{transform:translate(0,0)}to{transform:translate(-30px,-50px)}}
 #app{position:relative;z-index:1;max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
@@ -243,7 +246,72 @@ header.glass::before{display:none;}
 .add-log-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
 .add-log-grid .field-group.full{grid-column:1/-1;}
 
-/* Modals */
+/* Jadwal View */
+.jadwal-spinner{display:flex;align-items:center;justify-content:center;padding:40px;}
+.sum-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.sum-strip-item{border-radius:14px;padding:10px 11px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);position:relative;overflow:hidden;}
+.sum-strip-item::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,.2);}
+.ssl{font-size:9px;font-weight:700;color:rgba(255,255,255,.42);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.ssv{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1;}
+.ssv.g{color:var(--green);}.ssv.r{color:var(--danger);}.ssv.o{color:var(--orange);}
+.jadwal-sec{display:flex;flex-direction:column;gap:9px;}
+.jadwal-sec-hd{display:flex;align-items:center;justify-content:space-between;}
+.jadwal-sec-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;}
+.jadwal-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.jb-g{background:rgba(48,209,88,.18);color:var(--green);}
+.jb-o{background:rgba(255,159,10,.18);color:var(--orange);}
+.jb-r{background:rgba(255,69,58,.18);color:var(--danger);}
+/* Crop card */
+.crop-card{border-radius:16px;padding:13px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);position:relative;overflow:hidden;}
+.crop-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,.2);}
+.crop-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;}
+.crop-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;border:1px solid rgba(255,255,255,.1);}
+.ci-g{background:rgba(48,209,88,.2);}.ci-o{background:rgba(255,159,10,.2);}.ci-b{background:rgba(96,165,250,.2);}.ci-p{background:rgba(191,90,242,.2);}.ci-d{background:rgba(255,255,255,.1);}
+.crop-meta{flex:1;min-width:0;}
+.crop-origin{font-size:10px;font-weight:700;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;}
+.crop-name{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.crop-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+.fase-badge{font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.fb-veg{background:rgba(96,165,250,.2);color:var(--blue);border:1px solid rgba(96,165,250,.25);}
+.fb-gen{background:rgba(191,90,242,.2);color:var(--purple);border:1px solid rgba(191,90,242,.25);}
+.fb-bung{background:rgba(255,159,10,.2);color:var(--orange);border:1px solid rgba(255,159,10,.25);}
+.fb-pan{background:rgba(48,209,88,.2);color:var(--green);border:1px solid rgba(48,209,88,.25);}
+.crop-age{font-size:13px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.crop-age span{font-size:10px;color:rgba(255,255,255,.38);font-weight:500;}
+.crop-progress{height:4px;background:rgba(255,255,255,.08);border-radius:4px;margin-bottom:10px;overflow:hidden;}
+.cp-fill{height:100%;border-radius:4px;}
+.cp-veg{background:linear-gradient(90deg,var(--blue),#818CF8);}
+.cp-gen{background:linear-gradient(90deg,var(--purple),#EC4899);}
+.cp-bung{background:linear-gradient(90deg,var(--orange),#F97316);}
+.cp-pan{background:linear-gradient(90deg,var(--green),#059669);}
+.crop-card-bottom{display:flex;align-items:center;justify-content:space-between;}
+.crop-last{display:flex;align-items:center;gap:6px;}
+.cl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.cld-g{background:var(--green);}.cld-o{background:var(--orange);}.cld-b{background:var(--blue);}.cld-none{background:rgba(255,255,255,.25);}
+.cl-txt{font-size:11px;color:rgba(255,255,255,.42);}
+.crop-quick{font-size:10px;font-weight:700;color:var(--green);background:rgba(48,209,88,.14);border:1px solid rgba(48,209,88,.25);border-radius:9px;padding:5px 11px;cursor:pointer;white-space:nowrap;}
+.crop-quick:active{background:rgba(48,209,88,.25);}
+/* Saran card */
+.saran-card{border-radius:14px;padding:11px 13px;display:flex;gap:10px;align-items:flex-start;position:relative;overflow:hidden;}
+.saran-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,.18);}
+.sc-r{background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.22);}
+.sc-o{background:rgba(255,159,10,.09);border:1px solid rgba(255,159,10,.2);}
+.sc-g{background:rgba(48,209,88,.07);border:1px solid rgba(48,209,88,.18);}
+.sc-b{background:rgba(96,165,250,.09);border:1px solid rgba(96,165,250,.2);}
+.saran-ico{font-size:22px;flex-shrink:0;margin-top:1px;}
+.saran-body{flex:1;min-width:0;}
+.saran-title{font-size:13px;font-weight:700;color:#fff;letter-spacing:-.15px;margin-bottom:3px;}
+.saran-desc{font-size:11px;color:rgba(255,255,255,.5);line-height:1.45;}
+.saran-lahan{font-size:10px;font-weight:700;margin-top:5px;}
+.sl-r{color:var(--danger);}.sl-o{color:var(--orange);}.sl-g{color:var(--green);}.sl-b{color:var(--blue);}
+.saran-urgency{font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;flex-shrink:0;margin-top:2px;white-space:nowrap;}
+.su-r{background:rgba(255,69,58,.2);color:var(--danger);}
+.su-o{background:rgba(255,159,10,.2);color:var(--orange);}
+.su-g{background:rgba(48,209,88,.2);color:var(--green);}
+.su-b{background:rgba(96,165,250,.2);color:var(--blue);}
+.jadwal-empty{text-align:center;padding:48px 20px;color:var(--text-2);}
+.jadwal-empty .emoji{font-size:44px;margin-bottom:12px;}
+.jadwal-empty p{font-size:14px;line-height:1.55;}
 .overlay{position:fixed;inset:0;background:rgba(10,6,30,.55);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;z-index:30;}
 .overlay.active{display:flex;}
 .sheet{width:100%;max-width:430px;max-height:88vh;overflow-y:auto;border-radius:26px 26px 0 0;padding:20px 20px 32px;animation:sheetUp .28s ease both;background:rgba(40,30,90,.88);backdrop-filter:blur(28px) saturate(170%);border-top:1px solid var(--border-glass);}
@@ -322,7 +390,7 @@ header.glass::before{display:none;}
         <svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>Beranda</span>
       </div>
-      <div class="tab-item" id="tab-calendar">
+      <div class="tab-item" id="tab-calendar" onclick="navigate('jadwal')">
         <svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Jadwal</span>
       </div>
@@ -527,19 +595,12 @@ function navigate(view,params={}){
 function renderHeader(){
   const h=el('hdr');
   const onHome=VS.view==='home';
+  const onJadwal=VS.view==='jadwal';
   const onSeasons=VS.view==='seasons';
   const onDetail=VS.view==='season-detail';
 
-  const statusBar=`<div class="hdr-status">
-    <span class="hdr-time">${new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span>
-    <div class="hdr-icons">
-      <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><rect x="0" y="4" width="3" height="7" rx="1" fill="white" opacity=".4"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="1" fill="white" opacity=".6"/><rect x="9" y="0" width="3" height="11" rx="1" fill="white" opacity=".8"/><rect x="13" y="0" width="3" height="11" rx="1" fill="white"/></svg>
-      <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="3.5" stroke="white" stroke-opacity=".35"/><rect x="23" y="3.5" width="2.5" height="5" rx="1.2" fill="white" fill-opacity=".35"/><rect x="2" y="2" width="15" height="8" rx="2" fill="white"/></svg>
-    </div>
-  </div>`;
-
   if(onHome){
-    h.innerHTML=statusBar+`<div class="hdr-home-row">
+    h.innerHTML=`<div class="hdr-home-row">
       <div class="brand-home">
         <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
           <circle cx="24" cy="24" r="23" fill="rgba(48,209,88,0.15)" stroke="rgba(48,209,88,0.35)" stroke-width="1.5"/>
@@ -555,9 +616,17 @@ function renderHeader(){
       </div>
       <img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">
     </div>`;
+  } else if(onJadwal){
+    h.innerHTML=`<div class="hdr-home-row">
+      <div>
+        <div class="brand-title">Jadwal</div>
+        <div class="hdr-sub">Tanaman aktif &amp; saran kegiatan</div>
+      </div>
+      <img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">
+    </div>`;
   } else {
     const backLabel=onSeasons?'Beranda':esc(VS.catName);
-    h.innerHTML=statusBar+`<div class="hdr-back-row">
+    h.innerHTML=`<div class="hdr-back-row">
       <button class="btn-back" id="btn-back">
         <svg width="8" height="14" viewBox="0 0 8 14"><polyline points="7 1 1 7 7 13" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         ${backLabel}
@@ -571,14 +640,11 @@ function renderHeader(){
       else navigate('home');
     });
   }
-  // Update tab bar active state
-  ['home','calendar','profile'].forEach(t=>{
-    const tb=el('tab-'+t);
-    if(tb)tb.classList.toggle('active',t==='home'&&onHome);
-  });
-  // ensure Beranda tab always highlighted for sub-pages too
-  const thome=el('tab-home');
-  if(thome)thome.classList.add('active');
+  // Update tab active
+  const tabMap={home:'tab-home',jadwal:'tab-calendar','seasons':'tab-home','season-detail':'tab-home'};
+  ['tab-home','tab-calendar'].forEach(id=>{const t=el(id);if(t)t.classList.remove('active');});
+  const act=el(tabMap[VS.view]||'tab-home');
+  if(act)act.classList.add('active');
 }
 
 function renderView(){
@@ -587,9 +653,11 @@ function renderView(){
   if(VS.view==='home')renderHome(v);
   else if(VS.view==='seasons')renderSeasons(v);
   else if(VS.view==='season-detail')renderSeasonDetail(v);
+  else if(VS.view==='jadwal')renderJadwal(v);
   // FAB
   const fab=el('fab');
   fab.textContent='+';
+  fab.style.display=VS.view==='jadwal'?'none':'flex';
   fab.onclick=()=>{
     if(VS.view==='home')openCatModal(null);
     else if(VS.view==='seasons')openSeasonModal(null);
@@ -1119,7 +1187,212 @@ el('btn-do-import').addEventListener('click',async()=>{
 });
 el('btn-cancel-import').addEventListener('click',()=>closeOverlay('ov-import'));
 
-// ── CATEGORY MODAL ────────────────────────────────────
+// ── JADWAL ───────────────────────────────────────────
+function getFase(hss, catName){
+  const nm=(catName||'').toLowerCase();
+  if(nm.includes('padi')||nm.includes('beras')){
+    if(hss<21)return{label:'Vegetatif Awal',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/110*100),max:110};
+    if(hss<55)return{label:'Vegetatif Aktif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/110*100),max:110};
+    if(hss<80)return{label:'Generatif',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/110*100),max:110};
+    if(hss<95)return{label:'Pengisian Gabah',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/110*100),max:110};
+    return{label:'Siap Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/110*100),98),max:110};
+  }
+  if(nm.includes('jagung')){
+    if(hss<30)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/90*100),max:90};
+    if(hss<60)return{label:'Pembungaan',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/90*100),max:90};
+    if(hss<80)return{label:'Pengisian Biji',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/90*100),max:90};
+    return{label:'Siap Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/90*100),98),max:90};
+  }
+  if(nm.includes('bawang')){
+    if(hss<25)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/65*100),max:65};
+    if(hss<50)return{label:'Pembentukan Umbi',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/65*100),max:65};
+    return{label:'Siap Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/65*100),98),max:65};
+  }
+  // generic
+  const max=90;
+  if(hss<max*0.4)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/max*100),max};
+  if(hss<max*0.75)return{label:'Generatif',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/max*100),max};
+  return{label:'Menjelang Panen',cls:'fb-bung',bar:'cp-bung',pct:Math.min(Math.round(hss/max*100),98),max};
+}
+
+function generateSaran(item){
+  const{lahan,catName,catIcon,lahanId,seasonId,daysSinceLast,lastLog}=item;
+  const hss=hitungUmur(lahan.tanam,null);
+  const nm=(catName||'').toLowerCase();
+  const saran=[];
+  const lNm=esc(lahan.name||'(tanpa nama)');
+  const lRef=`${catIcon} ${lNm} · ${catName}`;
+
+  if(nm.includes('padi')){
+    if(hss>=7&&hss<=18)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'🌿',title:'Penyiangan Pertama',desc:`HSS ${hss} — saatnya penyiangan gulma pertama sebelum bersaing dengan anakan.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=21&&hss<=35)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-1',desc:`HSS ${hss} — waktu ideal pemupukan Urea + Phonska untuk mendorong pertumbuhan anakan aktif.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=40&&hss<=52)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-2',desc:`HSS ${hss} — pemupukan NPK/Phonska kedua untuk mempersiapkan fase generatif.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=60&&hss<=78)saran.push({cls:'sc-r',su:'su-r',label:'Kritis',ico:'⚡',title:'Pemupukan Primordia (KCl)',desc:`HSS ${hss} — fase paling kritis! Pemupukan KCl + kalium untuk menunjang pengisian gabah. Jangan terlambat.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=70&&hss<=90)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🐀',title:'Waspadai Hama Tikus & Wereng',desc:`HSS ${hss} — fase generatif rentan serangan. Pasang perangkap, periksa pematang setiap hari.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=55&&hss<=95)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'💧',title:'Pertahankan Macak-Macak',desc:`HSS ${hss} — ketersediaan air cukup penting di fase ini. Pastikan sawah tidak kering berlebihan.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=95)saran.push({cls:'sc-g',su:'su-g',label:'Segera',ico:'🌾',title:'Persiapan Panen',desc:`HSS ${hss} — segera persiapkan mesin panen, karung, dan koordinasi dengan pengepul.`,lahan:lRef,lCls:'sl-g'});
+  } else if(nm.includes('jagung')){
+    if(hss>=25&&hss<=35)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-1',desc:`Hari ke-${hss} — pemupukan Urea pertama untuk vegetatif aktif jagung.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=50&&hss<=65)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan ke-2 + KCl',desc:`Hari ke-${hss} — menjelang pembungaan, tambah KCl untuk kualitas tongkol.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=80)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🌽',title:'Persiapan Panen Jagung',desc:`Hari ke-${hss} — cek kematangan biji dan kekeringan rambut tongkol sebelum panen.`,lahan:lRef,lCls:'sl-g'});
+  } else if(nm.includes('bawang')){
+    if(hss>=15&&hss<=25)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan Susulan Bawang',desc:`Hari ke-${hss} — aplikasikan NPK cair atau POC untuk mendukung pembentukan umbi.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=40&&hss<=55)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'🌸',title:'Pemupukan Umbi (KCl Cair)',desc:`Hari ke-${hss} — semprot KCl cair untuk pembesaran umbi. Fase kritis bawang merah.`,lahan:lRef,lCls:'sl-r'});
+  }
+  // Universal: tidak ada catatan >7 hari
+  if(daysSinceLast!==null&&daysSinceLast>=7){
+    saran.push({cls:'sc-b',su:'su-b',label:'Cek',ico:'📋',title:`Belum dicatat ${daysSinceLast} hari`,desc:'Tidak ada catatan perawatan. Segera cek kondisi lapangan dan catat perkembangannya.',lahan:lRef,lCls:'sl-b'});
+  }
+  return saran;
+}
+
+function icoClassFromCat(catName){
+  const nm=(catName||'').toLowerCase();
+  if(nm.includes('padi')||nm.includes('beras')||nm.includes('sawah'))return'ci-g';
+  if(nm.includes('jagung')||nm.includes('cabai')||nm.includes('tomat'))return'ci-o';
+  if(nm.includes('ikan')||nm.includes('lele')||nm.includes('kolam'))return'ci-b';
+  if(nm.includes('bawang')||nm.includes('sayur'))return'ci-p';
+  return'ci-d';
+}
+
+function dotClsLog(jenis){
+  const j=(jenis||'').toLowerCase();
+  if(j.includes('semprot'))return'cld-g';
+  if(j.includes('pupuk'))return'cld-o';
+  return'cld-b';
+}
+
+async function renderJadwal(container){
+  container.innerHTML=`<div class="jadwal-spinner"><div class="spinner"></div></div>`;
+  try{
+    // 1. Ambil semua kategori
+    const cSnap=await get(ref(db,`users/${uid}/categories`));
+    const cats=cSnap.val()||{};
+    const activeLahans=[];
+    // 2. Untuk tiap kategori ambil semua musim
+    await Promise.all(Object.entries(cats).map(async([catId,cat])=>{
+      const sSnap=await get(ref(db,`users/${uid}/seasons/${catId}`));
+      const seasons=sSnap.val()||{};
+      await Promise.all(Object.entries(seasons).map(async([seasonId,season])=>{
+        const lSnap=await get(ref(db,`users/${uid}/lahans/${seasonId}`));
+        const lahans=lSnap.val()||{};
+        await Promise.all(Object.entries(lahans).map(async([lahanId,lahan])=>{
+          if(!lahan.tanam||lahan.panen)return; // hanya yang aktif
+          // ambil perawatan terakhir
+          const pSnap=await get(ref(db,`users/${uid}/perawatan/${lahanId}`));
+          const pLogs=Object.values(pSnap.val()||{}).sort((a,b)=>b.tanggal.localeCompare(a.tanggal));
+          const lastLog=pLogs[0]||null;
+          const daysSinceLast=lastLog?Math.floor((new Date()-new Date(lastLog.tanggal+'T00:00:00'))/864e5):null;
+          activeLahans.push({lahanId,catId,catName:cat.name,catIcon:cat.icon||'📦',seasonId,seasonName:season.name,lahan,lastLog,daysSinceLast});
+        }));
+      }));
+    }));
+
+    if(!uid){return;}// sudah logout
+    container.innerHTML='';
+
+    if(!activeLahans.length){
+      container.innerHTML=`<div class="jadwal-empty"><div class="emoji">🌱</div><p>Belum ada tanaman aktif.<br>Tambahkan lahan dengan tanggal tanam di menu Beranda.</p></div>`;
+      return;
+    }
+
+    // hitung stats
+    const allSaran=[];
+    activeLahans.forEach(item=>allSaran.push(...generateSaran(item)));
+    const mendesak=allSaran.filter(s=>s.label==='Mendesak'||s.label==='Kritis').length;
+    const segera=allSaran.filter(s=>s.label==='Segera'||s.label==='Hari ini').length;
+
+    // Summary strip
+    const strip=document.createElement('div');
+    strip.className='sum-strip';
+    strip.innerHTML=`
+      <div class="sum-strip-item"><div class="ssl">Aktif</div><div class="ssv g">${activeLahans.length}</div></div>
+      <div class="sum-strip-item"><div class="ssl">Mendesak</div><div class="ssv r">${mendesak}</div></div>
+      <div class="sum-strip-item"><div class="ssl">Perlu Aksi</div><div class="ssv o">${segera}</div></div>`;
+    container.appendChild(strip);
+
+    // Tanaman Aktif section
+    const sec1=document.createElement('div');
+    sec1.className='jadwal-sec';
+    sec1.innerHTML=`<div class="jadwal-sec-hd">
+      <span class="jadwal-sec-title">🌱 Tanaman Aktif</span>
+      <span class="jadwal-badge jb-g">${activeLahans.length} Lahan</span>
+    </div>`;
+    activeLahans.forEach(item=>{
+      const{lahan,catName,catIcon,lahanId,seasonId,lastLog,daysSinceLast,seasonName}=item;
+      const hss=hitungUmur(lahan.tanam,null);
+      const fase=getFase(hss,catName);
+      const icoC=icoClassFromCat(catName);
+      const lastTxt=lastLog?`${dotClsLog(lastLog.jenis)===  'cld-g'?'Semprot':dotClsLog(lastLog.jenis)==='cld-o'?'Pupuk':'Kegiatan'} · ${daysSinceLast===0?'hari ini':daysSinceLast===1?'kemarin':`${daysSinceLast} hari lalu`}`:'Belum ada catatan';
+      const dotC=lastLog?dotClsLog(lastLog.jenis):'cld-none';
+      const card=document.createElement('div');
+      card.className='crop-card';
+      card.innerHTML=`
+        <div class="crop-card-top">
+          <div class="crop-ico ${icoC}">${catIcon}</div>
+          <div class="crop-meta">
+            <div class="crop-origin">${esc(catName)} · ${esc(seasonName)}</div>
+            <div class="crop-name">${esc(lahan.name||'(tanpa nama)')}</div>
+          </div>
+          <div class="crop-right">
+            <span class="fase-badge ${fase.cls}">${fase.label}</span>
+            <div class="crop-age">${hss} <span>hari</span></div>
+          </div>
+        </div>
+        <div class="crop-progress"><div class="cp-fill ${fase.bar}" style="width:${Math.min(fase.pct,100)}%"></div></div>
+        <div class="crop-card-bottom">
+          <div class="crop-last">
+            <div class="cl-dot ${dotC}"></div>
+            <span class="cl-txt">${lastTxt}</span>
+          </div>
+          <div class="crop-quick" onclick="quickAddLog('${lahanId}','${seasonId}')">＋ Catat</div>
+        </div>`;
+      sec1.appendChild(card);
+    });
+    container.appendChild(sec1);
+
+    // Saran section
+    if(allSaran.length){
+      const sec2=document.createElement('div');
+      sec2.className='jadwal-sec';
+      const mendesakCount=allSaran.filter(s=>s.label==='Mendesak'||s.label==='Kritis').length;
+      sec2.innerHTML=`<div class="jadwal-sec-hd">
+        <span class="jadwal-sec-title">⚡ Saran Kegiatan</span>
+        ${mendesakCount?`<span class="jadwal-badge jb-r">${mendesakCount} Mendesak</span>`:`<span class="jadwal-badge jb-g">${allSaran.length} Saran</span>`}
+      </div>`;
+      // sort: Mendesak/Kritis dulu
+      const sorted=allSaran.sort((a,b)=>{
+        const w={Kritis:0,Mendesak:1,Segera:2,'Hari ini':3,Cek:4,Info:5};
+        return(w[a.label]||5)-(w[b.label]||5);
+      });
+      sorted.forEach(s=>{
+        const card=document.createElement('div');
+        card.className=`saran-card ${s.cls}`;
+        card.innerHTML=`<div class="saran-ico">${s.ico}</div>
+          <div class="saran-body">
+            <div class="saran-title">${s.title}</div>
+            <div class="saran-desc">${s.desc}</div>
+            <div class="saran-lahan ${s.lCls}">${s.lahan}</div>
+          </div>
+          <span class="saran-urgency ${s.su}">${s.label}</span>`;
+        sec2.appendChild(card);
+      });
+      container.appendChild(sec2);
+    }
+  }catch(e){
+    container.innerHTML=`<div class="jadwal-empty"><div class="emoji">⚠️</div><p>Gagal memuat data: ${e.message}</p></div>`;
+  }
+}
+
+window.quickAddLog=function(lahanId,seasonId){
+  // Buka overlay note langsung dengan lahanId yang sudah diisi
+  VS.seasonId=seasonId;
+  activeCatId=lahanId;
+  openNoteModal(null,null);
+  // simpan lahanId ke state sementara
+  _quickLahanId=lahanId;
+};
+let _quickLahanId=null;
 function openCatModal(catId){
   editingCatId=catId;
   el('cat-modal-title').textContent=catId?'Edit Kategori':'Kategori Baru';
@@ -1227,4 +1500,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-</html>
+  </html>

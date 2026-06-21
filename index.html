@@ -1404,13 +1404,15 @@ async function renderJadwal(container){
       const hss=hitungUmur(lahan.tanam,null);
       const fase=getFase(hss,catName);
       const icoC=icoClassFromCat(catName);
-      // QA Fix 4: tampilkan jenis kegiatan sebenarnya, bukan "Kegiatan"
       const lastTxt=lastLog
         ?`${esc(lastLog.jenis)} · ${daysSinceLast===0?'hari ini':daysSinceLast===1?'kemarin':`${daysSinceLast} hari lalu`}`
         :'Belum ada catatan — ketuk + Catat';
       const dotC=lastLog?dotClsLog(lastLog.jenis):'cld-none';
-      // QA Fix 6: progress bar dengan label
       const sisaHari=Math.max(fase.max-hss,0);
+
+      // simpan data ke Map agar tidak perlu string escaping di onclick
+      quickLogMap.set(lahanId,{lahanId,seasonId,catIcon,lahanName:lahan.name||'(tanpa nama)',seasonName});
+
       const card=document.createElement('div');
       card.className='crop-card';
       card.innerHTML=`
@@ -1437,8 +1439,15 @@ async function renderJadwal(container){
             <div class="cl-dot ${dotC}"></div>
             <span class="cl-txt">${lastTxt}</span>
           </div>
-          <div class="crop-quick" onclick="quickAddLog('${lahanId}','${seasonId}','${esc(catIcon)}','${esc(lahan.name||'(tanpa nama)')}','${esc(seasonName)}')">＋ Catat</div>
+          <div class="crop-quick">＋ Catat</div>
         </div>`;
+
+      // pakai addEventListener langsung — aman dari karakter apapun di nama lahan
+      card.querySelector('.crop-quick').addEventListener('click',e=>{
+        e.stopPropagation();
+        quickAddLog(lahanId);
+      });
+
       sec1.appendChild(card);
     });
     container.appendChild(sec1);
@@ -1498,13 +1507,17 @@ function appendJadwalFooter(container){
   container.appendChild(foot);
 }
 
-window.quickAddLog=function(lahanId,seasonId,catIcon,lahanName,seasonName){
+// Map untuk data quick-add (menghindari string escaping di onclick)
+const quickLogMap=new Map();
+
+window.quickAddLog=function(lahanId){
+  const d=quickLogMap.get(lahanId);
+  if(!d){showToast('Data lahan tidak ditemukan.');return;}
   _quickLahanId=lahanId;
-  _quickSeasonId=seasonId;
   const ni=el('quick-cat-icon'),nn=el('quick-lahan-name'),ns=el('quick-season-name');
-  if(ni)ni.textContent=catIcon||'🌾';
-  if(nn)nn.textContent=lahanName||'(tanpa nama)';
-  if(ns)ns.textContent=seasonName||'';
+  if(ni)ni.textContent=d.catIcon||'🌾';
+  if(nn)nn.textContent=d.lahanName||'(tanpa nama)';
+  if(ns)ns.textContent=d.seasonName||'';
   el('quick-log-tgl').value=todayStr();
   el('quick-log-jenis').value='Penyemprotan';
   el('quick-custom-wrap').style.display='none';
@@ -1639,4 +1652,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-                                                                                                 </html>
+  </html>

@@ -312,7 +312,22 @@ header.glass::before{display:none;}
 .jadwal-empty{text-align:center;padding:48px 20px;color:var(--text-2);}
 .jadwal-empty .emoji{font-size:44px;margin-bottom:12px;}
 .jadwal-empty p{font-size:14px;line-height:1.55;}
-/* Footer */
+/* Template grid kategori */
+.tmpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.tmpl-btn{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);cursor:pointer;transition:all .15s;}
+.tmpl-btn:active{transform:scale(.97);}
+.tmpl-btn.selected{background:rgba(48,209,88,.18);border-color:rgba(48,209,88,.45);}
+.tmpl-btn-ico{font-size:20px;flex-shrink:0;}
+.tmpl-btn-info{flex:1;min-width:0;}
+.tmpl-btn-name{font-size:13px;font-weight:700;color:#fff;letter-spacing:-.1px;}
+.tmpl-btn-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px;}
+.tmpl-btn.selected .tmpl-btn-name{color:var(--green);}
+.tmpl-btn.selected .tmpl-btn-sub{color:rgba(48,209,88,.6);}
+.tmpl-notice{display:flex;align-items:flex-start;gap:7px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:9px 11px;margin-bottom:14px;font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;}
+.tmpl-notice svg{flex-shrink:0;color:var(--gold);margin-top:1px;}
+.tmpl-sep{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;}
+.tmpl-sep::before,.tmpl-sep::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1);}
+.tmpl-check{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(48,209,88,.5);background:rgba(48,209,88,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--green);}
 .app-footer{margin-top:6px;border-radius:var(--r-md);padding:16px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);text-align:center;}
 .app-footer-text{font-size:11.5px;color:rgba(255,255,255,.32);line-height:1.65;}
 .app-footer a{color:var(--green);font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:6px;}
@@ -412,8 +427,23 @@ header.glass::before{display:none;}
     <div class="sheet">
       <div class="sheet-handle"></div>
       <h3 id="cat-modal-title">Kategori Baru</h3>
-      <div class="sheet-field"><label>Nama kategori</label><input type="text" id="cat-name" placeholder="Contoh: Padi, Jagung, Bawang Merah..."></div>
-      <label class="icon-label">Ikon</label>
+
+      <!-- Template list - hanya tampil saat tambah baru -->
+      <div id="cat-tmpl-section">
+        <label class="icon-label" style="margin-bottom:9px;">Pilih dari daftar tanaman</label>
+        <div class="tmpl-grid" id="tmpl-grid"></div>
+        <div class="tmpl-notice">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Saran kegiatan otomatis di menu Jadwal hanya tersedia untuk tanaman di daftar ini. Tanaman di luar daftar tetap bisa dicatat, tapi tanpa saran otomatis.
+        </div>
+        <div class="tmpl-sep">atau ketik nama lain</div>
+      </div>
+
+      <div class="sheet-field">
+        <label id="cat-name-label">Nama kategori lainnya</label>
+        <input type="text" id="cat-name" placeholder="Contoh: Ubi Jalar, Terong, Semangka...">
+      </div>
+      <label class="icon-label">Pilih Ikon</label>
       <div class="icon-grid" id="icon-grid"></div>
       <button class="btn-primary" id="btn-save-cat">Simpan</button>
       <button class="btn-danger" id="btn-del-cat" style="display:none">Hapus Kategori</button>
@@ -539,7 +569,55 @@ const provider=new GoogleAuthProvider();
 
 // ── STATE ────────────────────────────────────────────
 let uid=null;
-const ICONS=['🌾','🌽','🧅','🥦','🍅','🥬','🌿','🐐','🦆','🐟','🥥','🐂','📦','🌱','🍃'];
+const ICONS=['🌾','🌽','🌶️','🍅','🧅','🧄','🥬','🥦','🥒','🍆','🥕','🍠','🫘','🌿','🥥','🍌','🥭','🍈','🍉','🎃','🐐','🦆','🐔','🐟','🐂','🐠','🌱','🍃','📦','🫛'];
+
+// ── TEMPLATE TANAMAN (saran otomatis tersedia) ───────
+const CROP_TEMPLATES=[
+  {name:'Padi',      icon:'🌾', sub:'~110 hari, saran lengkap', key:'padi'},
+  {name:'Jagung',    icon:'🌽', sub:'~90 hari, saran lengkap',  key:'jagung'},
+  {name:'Cabai',     icon:'🌶️', sub:'~90 hari, saran lengkap',  key:'cabai'},
+  {name:'Tomat',     icon:'🍅', sub:'~80 hari, saran lengkap',  key:'tomat'},
+  {name:'Bawang Merah',icon:'🧅',sub:'~65 hari, saran lengkap', key:'bawang merah'},
+  {name:'Singkong',  icon:'🍠', sub:'~8 bulan, saran lengkap',  key:'singkong'},
+  {name:'Talas',     icon:'🌿', sub:'~6 bulan, saran lengkap',  key:'talas'},
+];
+const CROP_ICON_MAP=[
+  {keys:['padi','beras','sawah','gabah','rojolele','ciherang','ir64','mekongga'],icon:'🌾'},
+  {keys:['jagung','corn'],icon:'🌽'},
+  {keys:['cabai','cabe','lombok','rawit','merah besar'],icon:'🌶️'},
+  {keys:['tomat'],icon:'🍅'},
+  {keys:['bawang merah','brambang'],icon:'🧅'},
+  {keys:['bawang putih'],icon:'🧄'},
+  {keys:['kangkung','bayam','sawi','selada','pakcoy','caisim','sayur'],icon:'🥬'},
+  {keys:['brokoli','kol','kubis','cauliflower'],icon:'🥦'},
+  {keys:['timun','mentimun'],icon:'🥒'},
+  {keys:['terong','terun','ungu'],icon:'🍆'},
+  {keys:['wortel','carrot'],icon:'🥕'},
+  {keys:['singkong','ubi kayu','ketela'],icon:'🍠'},
+  {keys:['kacang','kedelai','hijau','tanah','panjang'],icon:'🫘'},
+  {keys:['tebu','gula'],icon:'🌿'},
+  {keys:['kelapa','kopra'],icon:'🥥'},
+  {keys:['pisang','gedang','raja'],icon:'🍌'},
+  {keys:['mangga','arumanis'],icon:'🥭'},
+  {keys:['pepaya','gedang pepaya'],icon:'🍈'},
+  {keys:['semangka','melon'],icon:'🍉'},
+  {keys:['labu','waluh'],icon:'🎃'},
+  {keys:['kambing','domba'],icon:'🐐'},
+  {keys:['bebek','itik'],icon:'🦆'},
+  {keys:['ayam','broiler','layer','kampung'],icon:'🐔'},
+  {keys:['lele','nila','mas','gurame','gurami','bawal','udang','ikan','kolam'],icon:'🐟'},
+  {keys:['sapi','lembu','kerbau'],icon:'🐂'},
+  {keys:['edamame'],icon:'🫛'},
+];
+
+function detectCropIcon(name){
+  const nm=(name||'').toLowerCase().trim();
+  if(!nm)return null;
+  for(const entry of CROP_ICON_MAP){
+    if(entry.keys.some(k=>nm.includes(k)))return entry.icon;
+  }
+  return null;
+}
 let allUnsubs=[];          // all firebase listeners
 let viewUnsubs=[];         // view-specific listeners
 let VS={view:'home',catId:null,catName:'',catIcon:'',seasonId:null,seasonName:''};
@@ -1237,9 +1315,9 @@ el('btn-do-import').addEventListener('click',async()=>{
 el('btn-cancel-import').addEventListener('click',()=>closeOverlay('ov-import'));
 
 // ── JADWAL ───────────────────────────────────────────
-function getFase(hss, catName){
+function getFase(hss,catName){
   const nm=(catName||'').toLowerCase();
-  if(nm.includes('padi')||nm.includes('beras')){
+  if(nm.includes('padi')){
     if(hss<21)return{label:'Vegetatif Awal',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/110*100),max:110};
     if(hss<55)return{label:'Vegetatif Aktif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/110*100),max:110};
     if(hss<80)return{label:'Generatif',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/110*100),max:110};
@@ -1252,42 +1330,107 @@ function getFase(hss, catName){
     if(hss<80)return{label:'Pengisian Biji',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/90*100),max:90};
     return{label:'Siap Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/90*100),98),max:90};
   }
+  if(nm.includes('cabai')){
+    if(hss<25)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/90*100),max:90};
+    if(hss<50)return{label:'Berbunga',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/90*100),max:90};
+    if(hss<75)return{label:'Pembuahan',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/90*100),max:90};
+    return{label:'Panen Bertahap',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/90*100),98),max:90};
+  }
+  if(nm.includes('tomat')){
+    if(hss<20)return{label:'Bibit',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/80*100),max:80};
+    if(hss<40)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/80*100),max:80};
+    if(hss<60)return{label:'Berbunga',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/80*100),max:80};
+    if(hss<75)return{label:'Pembuahan',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/80*100),max:80};
+    return{label:'Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/80*100),98),max:80};
+  }
   if(nm.includes('bawang')){
     if(hss<25)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/65*100),max:65};
     if(hss<50)return{label:'Pembentukan Umbi',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/65*100),max:65};
     return{label:'Siap Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/65*100),98),max:65};
   }
-  // generic
+  if(nm.includes('singkong')||nm.includes('ketela')){
+    const max=270;
+    if(hss<60)return{label:'Vegetatif Awal',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/max*100),max};
+    if(hss<150)return{label:'Pembentukan Ubi',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/max*100),max};
+    if(hss<220)return{label:'Pembesaran Ubi',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/max*100),max};
+    return{label:'Siap Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/max*100),98),max};
+  }
+  if(nm.includes('talas')){
+    const max=180;
+    if(hss<45)return{label:'Vegetatif Awal',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/max*100),max};
+    if(hss<100)return{label:'Pembentukan Umbi',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/max*100),max};
+    if(hss<150)return{label:'Pembesaran Umbi',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/max*100),max};
+    return{label:'Siap Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/max*100),98),max};
+  }
+  // generik
   const max=90;
-  if(hss<max*0.4)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/max*100),max};
-  if(hss<max*0.75)return{label:'Generatif',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/max*100),max};
+  if(hss<max*0.35)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/max*100),max};
+  if(hss<max*0.7)return{label:'Generatif',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/max*100),max};
   return{label:'Menjelang Panen',cls:'fb-bung',bar:'cp-bung',pct:Math.min(Math.round(hss/max*100),98),max};
 }
 
 function generateSaran(item){
-  const{lahan,catName,catIcon,lahanId,seasonId,daysSinceLast,lastLog}=item;
+  const{lahan,catName,catIcon,daysSinceLast}=item;
   const hss=hitungUmur(lahan.tanam,null);
   const nm=(catName||'').toLowerCase();
   const saran=[];
-  const lNm=esc(lahan.name||'(tanpa nama)');
-  const lRef=`${catIcon} ${lNm} · ${catName}`;
+  const lRef=`${catIcon} ${esc(lahan.name||'(tanpa nama)')} · ${catName}`;
 
   if(nm.includes('padi')){
     if(hss>=7&&hss<=18)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'🌿',title:'Penyiangan Pertama',desc:`HSS ${hss} — saatnya penyiangan gulma pertama sebelum bersaing dengan anakan.`,lahan:lRef,lCls:'sl-o'});
-    if(hss>=21&&hss<=35)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-1',desc:`HSS ${hss} — waktu ideal pemupukan Urea + Phonska untuk mendorong pertumbuhan anakan aktif.`,lahan:lRef,lCls:'sl-r'});
-    if(hss>=40&&hss<=52)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-2',desc:`HSS ${hss} — pemupukan NPK/Phonska kedua untuk mempersiapkan fase generatif.`,lahan:lRef,lCls:'sl-r'});
-    if(hss>=60&&hss<=78)saran.push({cls:'sc-r',su:'su-r',label:'Kritis',ico:'⚡',title:'Pemupukan Primordia (KCl)',desc:`HSS ${hss} — fase paling kritis! Pemupukan KCl + kalium untuk menunjang pengisian gabah. Jangan terlambat.`,lahan:lRef,lCls:'sl-r'});
-    if(hss>=70&&hss<=90)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🐀',title:'Waspadai Hama Tikus & Wereng',desc:`HSS ${hss} — fase generatif rentan serangan. Pasang perangkap, periksa pematang setiap hari.`,lahan:lRef,lCls:'sl-b'});
-    if(hss>=55&&hss<=95)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'💧',title:'Pertahankan Macak-Macak',desc:`HSS ${hss} — ketersediaan air cukup penting di fase ini. Pastikan sawah tidak kering berlebihan.`,lahan:lRef,lCls:'sl-g'});
-    if(hss>=95)saran.push({cls:'sc-g',su:'su-g',label:'Segera',ico:'🌾',title:'Persiapan Panen',desc:`HSS ${hss} — segera persiapkan mesin panen, karung, dan koordinasi dengan pengepul.`,lahan:lRef,lCls:'sl-g'});
-  } else if(nm.includes('jagung')){
-    if(hss>=25&&hss<=35)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-1',desc:`Hari ke-${hss} — pemupukan Urea pertama untuk vegetatif aktif jagung.`,lahan:lRef,lCls:'sl-r'});
-    if(hss>=50&&hss<=65)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan ke-2 + KCl',desc:`Hari ke-${hss} — menjelang pembungaan, tambah KCl untuk kualitas tongkol.`,lahan:lRef,lCls:'sl-o'});
-    if(hss>=80)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🌽',title:'Persiapan Panen Jagung',desc:`Hari ke-${hss} — cek kematangan biji dan kekeringan rambut tongkol sebelum panen.`,lahan:lRef,lCls:'sl-g'});
-  } else if(nm.includes('bawang')){
-    if(hss>=15&&hss<=25)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan Susulan Bawang',desc:`Hari ke-${hss} — aplikasikan NPK cair atau POC untuk mendukung pembentukan umbi.`,lahan:lRef,lCls:'sl-o'});
-    if(hss>=40&&hss<=55)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'🌸',title:'Pemupukan Umbi (KCl Cair)',desc:`Hari ke-${hss} — semprot KCl cair untuk pembesaran umbi. Fase kritis bawang merah.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=21&&hss<=35)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-1',desc:`HSS ${hss} — pemupukan Urea + Phonska untuk mendorong anakan aktif.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=40&&hss<=52)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-2',desc:`HSS ${hss} — NPK/Phonska kedua untuk mempersiapkan fase generatif.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=60&&hss<=78)saran.push({cls:'sc-r',su:'su-r',label:'Kritis',ico:'⚡',title:'Pemupukan Primordia (KCl)',desc:`HSS ${hss} — fase paling kritis! KCl + kalium untuk pengisian gabah. Jangan terlambat.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=70&&hss<=90)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🐀',title:'Waspadai Hama Tikus & Wereng',desc:`HSS ${hss} — fase generatif rentan serangan. Pasang perangkap, periksa pematang tiap hari.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=55&&hss<=95)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'💧',title:'Pertahankan Macak-Macak',desc:`HSS ${hss} — ketersediaan air sangat penting. Pastikan sawah tidak kering berlebihan.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=95)saran.push({cls:'sc-g',su:'su-g',label:'Segera',ico:'🌾',title:'Persiapan Panen',desc:`HSS ${hss} — persiapkan mesin panen, karung, dan koordinasi dengan pengepul.`,lahan:lRef,lCls:'sl-g'});
   }
+  else if(nm.includes('jagung')){
+    if(hss>=10&&hss<=20)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'🌿',title:'Penyiangan & Pembumbunan',desc:`Hari ke-${hss} — bersihkan gulma dan timbun tanah ke pangkal batang jagung.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=25&&hss<=35)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Susulan ke-1 (Urea)',desc:`Hari ke-${hss} — pupuk Urea untuk mendorong pertumbuhan vegetatif aktif.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=50&&hss<=65)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan ke-2 + KCl',desc:`Hari ke-${hss} — menjelang pembungaan, tambah KCl untuk kualitas tongkol.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=55&&hss<=70)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'💧',title:'Fase Bunga — Jaga Pengairan',desc:`Hari ke-${hss} — fase pembungaan sangat butuh air. Hindari kekurangan air.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=80)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🌽',title:'Persiapan Panen Jagung',desc:`Hari ke-${hss} — cek kematangan biji dan kekeringan rambut tongkol.`,lahan:lRef,lCls:'sl-g'});
+  }
+  else if(nm.includes('cabai')){
+    if(hss>=10&&hss<=20)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'💧',title:'Penyiraman Rutin Bibit',desc:`Hari ke-${hss} — siram 2x sehari pagi dan sore. Jaga kelembaban tanah konsisten.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=20&&hss<=30)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan Dasar NPK',desc:`Hari ke-${hss} — beri NPK 16-16-16 untuk pertumbuhan akar dan batang yang kokoh.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=30&&hss<=45)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🔍',title:'Cek Hama Kutu & Thrips',desc:`Hari ke-${hss} — periksa daun bagian bawah. Semprot insektisida jika ditemukan hama.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=40&&hss<=55)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'🌸',title:'Pemupukan Fase Berbunga',desc:`Hari ke-${hss} — beri KCl dan kalsium untuk kualitas bunga dan mencegah gugur bunga.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=55&&hss<=75)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Pembuahan',desc:`Hari ke-${hss} — fase kritis pembuahan. Semprot pupuk daun + kalium untuk hasil maksimal.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=80)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🌶️',title:'Pantau Kematangan Buah',desc:`Hari ke-${hss} — panen bertahap saat buah berwarna merah merata. Jangan terlambat.`,lahan:lRef,lCls:'sl-g'});
+  }
+  else if(nm.includes('tomat')){
+    if(hss>=7&&hss<=15)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'🌱',title:'Penyulaman & Penyiraman',desc:`Hari ke-${hss} — ganti bibit yang mati (sulam) dan siram 2x sehari.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=15&&hss<=25)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan Awal NPK',desc:`Hari ke-${hss} — beri NPK untuk pertumbuhan vegetatif. Tambah ZA untuk nitrogen.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=20&&hss<=30)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🪢',title:'Pasang Ajir / Lanjaran',desc:`Hari ke-${hss} — pasang tiang penyangga sebelum tanaman terlalu tinggi dan mudah roboh.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=35&&hss<=50)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Fase Berbunga',desc:`Hari ke-${hss} — kurangi N, tingkatkan K dan Ca. Semprot boron untuk mencegah gugur bunga.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=40&&hss<=60)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🔍',title:'Cek Penyakit Layu & Busuk',desc:`Hari ke-${hss} — periksa dari gejala layu fusarium atau busuk buah (antraknosa).`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=65)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🍅',title:'Panen Bertahap Tomat',desc:`Hari ke-${hss} — panen saat buah merah 80%. Jangan tunggu terlalu matang agar tidak busuk.`,lahan:lRef,lCls:'sl-g'});
+  }
+  else if(nm.includes('bawang')){
+    if(hss>=7&&hss<=15)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'💧',title:'Pengairan Rutin Bibit',desc:`Hari ke-${hss} — siram 2x sehari. Tanah harus lembab tapi tidak tergenang.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=15&&hss<=25)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan Susulan ke-1',desc:`Hari ke-${hss} — aplikasikan NPK + Urea untuk mendukung pertumbuhan daun dan akar.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=20&&hss<=35)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🔍',title:'Cek Hama Ulat & Thrips',desc:`Hari ke-${hss} — bawang rentan thrips dan ulat. Semprot insektisida secara preventif.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=35&&hss<=50)saran.push({cls:'sc-r',su:'su-r',label:'Mendesak',ico:'💊',title:'Pemupukan Umbi (KCl Cair)',desc:`Hari ke-${hss} — fase kritis! Semprot KCl cair untuk pembesaran umbi bawang merah.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=50&&hss<=60)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💧',title:'Kurangi Pengairan',desc:`Hari ke-${hss} — menjelang panen, kurangi frekuensi siram agar umbi mengering alami.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=60)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🧅',title:'Persiapan Panen Bawang',desc:`Hari ke-${hss} — daun mulai rebah tanda siap panen. Cabut dan jemur 3-5 hari sebelum simpan.`,lahan:lRef,lCls:'sl-g'});
+  }
+  else if(nm.includes('singkong')||nm.includes('ketela')){
+    if(hss>=14&&hss<=30)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'🌿',title:'Penyiangan Awal',desc:`Hari ke-${hss} — bersihkan gulma di sekitar batang. Singkong muda sangat terpengaruh gulma.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=30&&hss<=60)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan Susulan Urea + TSP',desc:`Hari ke-${hss} — beri Urea + TSP untuk pertumbuhan batang dan pembentukan ubi awal.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=60&&hss<=90)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'✂️',title:'Pangkas Daun Bawah',desc:`Hari ke-${hss} — pangkas 2-3 daun terbawah agar nutrisi fokus ke pertumbuhan ubi.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=150&&hss<=200)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan KCl untuk Ubi',desc:`Hari ke-${hss} — tambah KCl untuk memaksimalkan bobot dan kadar pati ubi singkong.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=240)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🍠',title:'Cek Kesiapan Panen',desc:`Hari ke-${hss} — panen 8-12 bulan. Cabut 1 tanaman untuk cek ukuran ubi.`,lahan:lRef,lCls:'sl-g'});
+  }
+  else if(nm.includes('talas')){
+    if(hss>=14&&hss<=30)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'💧',title:'Jaga Kelembaban Tanah',desc:`Hari ke-${hss} — talas butuh tanah lembab konsisten. Siram setiap hari di musim kemarau.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=30&&hss<=60)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan NPK Pertama',desc:`Hari ke-${hss} — beri NPK 16-16-16 untuk pertumbuhan umbi dan daun optimal.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=60&&hss<=100)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🌿',title:'Pembumbunan Tanah',desc:`Hari ke-${hss} — timbun tanah ke pangkal agar umbi berkembang lebih besar.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=120&&hss<=150)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan KCl Akhir',desc:`Hari ke-${hss} — beri KCl untuk memaksimalkan ukuran dan kualitas umbi talas.`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=150)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🌿',title:'Persiapan Panen Talas',desc:`Hari ke-${hss} — panen saat daun mulai menguning. Cabut hati-hati agar umbi tidak luka.`,lahan:lRef,lCls:'sl-g'});
+  }
+
   // Universal: tidak ada catatan >7 hari
   if(daysSinceLast!==null&&daysSinceLast>=7){
     saran.push({cls:'sc-b',su:'su-b',label:'Cek',ico:'📋',title:`Belum dicatat ${daysSinceLast} hari`,desc:'Tidak ada catatan perawatan. Segera cek kondisi lapangan dan catat perkembangannya.',lahan:lRef,lCls:'sl-b'});
@@ -1297,7 +1440,7 @@ function generateSaran(item){
 
 function icoClassFromCat(catName){
   const nm=(catName||'').toLowerCase();
-  if(nm.includes('padi')||nm.includes('beras')||nm.includes('sawah'))return'ci-g';
+  if(nm.includes('padi')||nm.includes('talas')||nm.includes('singkong'))return'ci-g';
   if(nm.includes('jagung')||nm.includes('cabai')||nm.includes('tomat'))return'ci-o';
   if(nm.includes('ikan')||nm.includes('lele')||nm.includes('kolam'))return'ci-b';
   if(nm.includes('bawang')||nm.includes('sayur'))return'ci-p';
@@ -1545,17 +1688,49 @@ el('btn-save-quick-log').addEventListener('click',async()=>{
 });
 el('btn-cancel-quick-log').addEventListener('click',()=>closeOverlay('ov-quick-log'));
 let _quickLahanId=null;
+let _selectedTemplate=null;
+
 function openCatModal(catId){
   editingCatId=catId;
+  _selectedTemplate=null;
   el('cat-modal-title').textContent=catId?'Edit Kategori':'Kategori Baru';
   el('cat-name').value=catId?(localCats[catId]?.name||''):'';
   selectedIcon=catId?(localCats[catId]?.icon||ICONS[0]):ICONS[0];
   el('btn-del-cat').style.display=catId?'block':'none';
+  // Tampilkan/sembunyikan template section
+  const tmplSec=el('cat-tmpl-section');
+  const nameLbl=el('cat-name-label');
+  if(tmplSec)tmplSec.style.display=catId?'none':'block';
+  if(nameLbl)nameLbl.textContent=catId?'Nama kategori':'Nama kategori lainnya';
+  if(!catId)el('cat-name').placeholder='Contoh: Ubi Jalar, Terong, Semangka...';
+  else el('cat-name').placeholder='';
+  renderTemplateGrid();
   renderIconGrid();
   openOverlay('ov-cat');
-  setTimeout(()=>el('cat-name').focus(),200);
+  setTimeout(()=>el('cat-name').focus(),250);
 }
 window.openCatModal=openCatModal;
+
+function renderTemplateGrid(){
+  const grid=el('tmpl-grid');if(!grid)return;
+  grid.innerHTML=CROP_TEMPLATES.map((t,i)=>`
+    <div class="tmpl-btn${_selectedTemplate===i?' selected':''}" onclick="selectTemplate(${i})">
+      <div class="tmpl-btn-ico">${t.icon}</div>
+      <div class="tmpl-btn-info">
+        <div class="tmpl-btn-name">${t.name}</div>
+        <div class="tmpl-btn-sub">${t.sub}</div>
+      </div>
+      ${_selectedTemplate===i?'<div class="tmpl-check">✓</div>':''}
+    </div>`).join('');
+}
+window.selectTemplate=function(idx){
+  _selectedTemplate=idx;
+  const t=CROP_TEMPLATES[idx];
+  el('cat-name').value=''; // clear input bebas jika template dipilih
+  selectedIcon=t.icon;
+  renderTemplateGrid();
+  renderIconGrid();
+};
 
 function renderIconGrid(){
   el('icon-grid').innerHTML=ICONS.map(ic=>`<div class="icon-opt${ic===selectedIcon?' sel':''}" onclick="selectIcon('${ic}')">${ic}</div>`).join('');
@@ -1563,7 +1738,15 @@ function renderIconGrid(){
 window.selectIcon=function(ic){selectedIcon=ic;renderIconGrid();};
 
 el('btn-save-cat').addEventListener('click',async()=>{
-  const name=el('cat-name').value.trim();if(!name){showToast('Nama kategori belum diisi.');return;}
+  // Prioritas: template dipilih → pakai nama template; atau input manual
+  let name='';
+  if(_selectedTemplate!==null){
+    name=CROP_TEMPLATES[_selectedTemplate].name;
+    selectedIcon=CROP_TEMPLATES[_selectedTemplate].icon;
+  }else{
+    name=el('cat-name').value.trim();
+  }
+  if(!name){showToast('Pilih template atau ketik nama kategori.');return;}
   if(editingCatId){
     await update(ref(db,`users/${uid}/categories/${editingCatId}`),{name,icon:selectedIcon});
   }else{
@@ -1652,4 +1835,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-  </html>
+        </html>

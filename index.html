@@ -672,7 +672,13 @@ onAuthStateChanged(auth,user=>{
     uid=user.uid;
     el('s-login').style.display='none';
     el('s-main').style.display='flex';
-    document.getElementById('s-main').querySelector && null;
+    // Simpan profil user ke Firebase (digunakan oleh admin panel)
+    update(ref(db,`users/${uid}/profile`),{
+      name:user.displayName||'',
+      email:user.email||'',
+      photoURL:user.photoURL||'',
+      lastSeen:Date.now(),
+    }).catch(()=>{});
     navigate('home');
   }else{
     uid=null;localCats={};localSeasons={};localLahans={};localPerawatan={};
@@ -1835,4 +1841,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-        </html>
+  </html>

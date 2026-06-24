@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#08041e">
+<title>Admin Panel — Catatan Petani</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='23' fill='%23150d3a' stroke='%23FF9F0A' stroke-width='2'/%3E%3Cpath d='M12 24h20M22 14l10 10-10 10' stroke='%23FF9F0A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06031a;--bg2:#100848;--bg3:#1e0d6b;
+  --glass:rgba(255,255,255,.08);--glass2:rgba(255,255,255,.13);
+  --border:rgba(255,255,255,.14);
+  --t1:#F8FAFC;--t2:rgba(248,250,252,.6);--t3:rgba(248,250,252,.35);
+  --green:#30D158;--orange:#FF9F0A;--red:#FF453A;--blue:#60A5FA;--purple:#BF5AF2;--gold:#FFD60A;
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased;}
+body{background:radial-gradient(ellipse at 20% 0%,rgba(72,20,180,.5),transparent 50%),radial-gradient(ellipse at 80% 85%,rgba(48,209,88,.1),transparent 40%),linear-gradient(170deg,var(--bg) 0%,var(--bg2) 50%,var(--bg3) 100%);background-attachment:fixed;min-height:100vh;}
+#app{max-width:680px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+.glass{background:var(--glass);backdrop-filter:blur(28px) saturate(170%);-webkit-backdrop-filter:blur(28px) saturate(170%);border:1px solid var(--border);position:relative;}
+.glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,.2);border-radius:inherit;pointer-events:none;}
+
+/* Loading */
+#s-load{flex:1;display:flex;align-items:center;justify-content:center;}
+.spin{width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--orange);animation:sp .9s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Login */
+#s-login{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;gap:18px;}
+.admin-badge{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;background:rgba(255,159,10,.15);border:2px solid rgba(255,159,10,.35);}
+#s-login h1{font-size:24px;font-weight:800;letter-spacing:-.4px;}
+#s-login .sub{font-size:14px;color:var(--t2);line-height:1.5;max-width:280px;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;font-weight:600;font-size:15px;border:none;border-radius:12px;padding:14px 22px;width:100%;max-width:260px;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.25);}
+.btn-google:active{transform:scale(.97);}
+.access-denied{background:rgba(255,69,58,.12);border:1px solid rgba(255,69,58,.25);border-radius:14px;padding:16px 20px;display:none;max-width:300px;}
+.access-denied h3{color:var(--red);font-size:16px;margin-bottom:6px;}
+.access-denied p{color:var(--t2);font-size:13px;line-height:1.5;}
+
+/* Main */
+#s-main{flex:1;display:none;flex-direction:column;}
+header{background:rgba(8,4,30,.8);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:max(14px,env(safe-area-inset-top,14px)) 16px 14px;position:sticky;top:0;z-index:10;}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between;}
+.hdr-brand{display:flex;align-items:center;gap:10px;}
+.hdr-brand h1{font-size:18px;font-weight:800;letter-spacing:-.3px;}
+.hdr-badge{font-size:9px;font-weight:800;background:rgba(255,159,10,.2);color:var(--orange);border:1px solid rgba(255,159,10,.3);border-radius:20px;padding:2px 8px;text-transform:uppercase;letter-spacing:.06em;}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.admin-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,159,10,.4);}
+.btn-logout{font-size:12px;font-weight:600;color:var(--t2);background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;}
+.btn-logout:active{background:rgba(255,69,58,.15);color:var(--red);}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:rgba(8,4,30,.6);padding:0 14px;}
+.tab-btn{padding:12px 14px;font-size:13px;font-weight:600;color:var(--t2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;transition:all .15s;}
+.tab-btn.active{color:var(--orange);border-bottom-color:var(--orange);}
+
+/* Content */
+#content{flex:1;padding:16px 14px 60px;display:flex;flex-direction:column;gap:12px;}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat-card{border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;}
+.stat-lbl{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.stat-val{font-size:28px;font-weight:800;letter-spacing:-.6px;line-height:1;}
+.stat-sub{font-size:11px;color:var(--t2);margin-top:4px;}
+.sv-g{color:var(--green);}.sv-o{color:var(--orange);}.sv-b{color:var(--blue);}.sv-p{color:var(--purple);}
+
+/* Section */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sec-title{font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.08em;}
+.sec-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--glass);border:1px solid var(--border);}
+
+/* User card */
+.user-card{border-radius:var(--r);overflow:hidden;margin-bottom:0;}
+.user-head{display:flex;align-items:center;gap:11px;padding:13px 14px;cursor:pointer;}
+.user-head:active{background:rgba(255,255,255,.06);}
+.user-av{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--t1);}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:14px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-email{font-size:11.5px;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-stats{display:flex;gap:8px;flex-shrink:0;}
+.us{display:flex;flex-direction:column;align-items:center;}
+.us-v{font-size:15px;font-weight:800;color:var(--t1);}
+.us-l{font-size:9px;color:var(--t3);font-weight:600;text-transform:uppercase;}
+.user-chev{color:var(--t3);font-size:16px;transition:transform .2s;}
+.user-card.open .user-chev{transform:rotate(180deg);}
+.user-body{display:none;border-top:1px solid rgba(255,255,255,.07);padding:12px 14px;}
+.user-card.open .user-body{display:block;}
+.user-detail-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.user-detail-row:last-child{border-bottom:none;}
+.ud-ico{font-size:16px;flex-shrink:0;}
+.ud-info{flex:1;min-width:0;}
+.ud-name{font-size:13px;font-weight:600;color:var(--t1);}
+.ud-sub{font-size:11px;color:var(--t2);margin-top:1px;}
+.cat-chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin:2px 3px 2px 0;}
+.chip-g{background:rgba(48,209,88,.18);color:var(--green);}
+.chip-o{background:rgba(255,159,10,.18);color:var(--orange);}
+.chip-b{background:rgba(96,165,250,.18);color:var(--blue);}
+.chip-p{background:rgba(191,90,242,.18);color:var(--purple);}
+.chip-d{background:rgba(255,255,255,.1);color:var(--t2);}
+.last-seen{font-size:10px;color:var(--t3);margin-top:4px;}
+
+/* Chart */
+.chart-wrap{border-radius:var(--r);padding:14px;}
+.chart-title{font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:100px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height .3s ease;}
+.bar-lbl{font-size:9px;color:var(--t3);text-align:center;line-height:1.2;}
+.bar-val{font-size:10px;font-weight:700;color:var(--t1);}
+.crop-dist{display:flex;flex-direction:column;gap:6px;}
+.dist-row{display:flex;align-items:center;gap:8px;}
+.dist-lbl{font-size:12px;font-weight:600;color:var(--t1);width:90px;flex-shrink:0;}
+.dist-bar-wrap{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;}
+.dist-bar{height:100%;border-radius:4px;}
+.dist-num{font-size:11px;font-weight:700;color:var(--t2);width:24px;text-align:right;flex-shrink:0;}
+
+/* Active crop (same as jadwal) */
+.crop-card{border-radius:var(--r);padding:13px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);}
+.crop-top{display:flex;gap:10px;margin-bottom:8px;}
+.crop-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:1px solid rgba(255,255,255,.1);}
+.ci-g{background:rgba(48,209,88,.2);}.ci-o{background:rgba(255,159,10,.2);}.ci-p{background:rgba(191,90,242,.2);}.ci-d{background:rgba(255,255,255,.1);}
+.crop-meta{flex:1;min-width:0;}
+.crop-origin{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;}
+.crop-name-t{font-size:14px;font-weight:700;color:var(--t1);letter-spacing:-.2px;}
+.crop-owner{font-size:11px;color:var(--blue);margin-top:2px;}
+.crop-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+.fase-badge{font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.fb-v{background:rgba(96,165,250,.2);color:var(--blue);border:1px solid rgba(96,165,250,.25);}
+.fb-g{background:rgba(191,90,242,.2);color:var(--purple);border:1px solid rgba(191,90,242,.25);}
+.fb-b{background:rgba(255,159,10,.2);color:var(--orange);border:1px solid rgba(255,159,10,.25);}
+.fb-p{background:rgba(48,209,88,.2);color:var(--green);border:1px solid rgba(48,209,88,.25);}
+.crop-age{font-size:13px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.crop-age span{font-size:10px;color:var(--t3);font-weight:500;}
+.prog-wrap{height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;}
+
+/* Empty */
+.empty{text-align:center;padding:44px 20px;color:var(--t2);}
+.empty .em{font-size:40px;margin-bottom:10px;}
+.empty p{font-size:13px;line-height:1.5;}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,15,45,.92);color:var(--t1);padding:12px 20px;border-radius:30px;font-size:13px;font-weight:500;opacity:0;transition:all .25s;z-index:50;border:1px solid var(--border);white-space:nowrap;max-width:90%;text-align:center;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Loading -->
+  <div id="s-load"><div class="spin"></div></div>
+
+  <!-- Login -->
+  <div id="s-login" style="display:none">
+    <div class="admin-badge">🛡️</div>
+    <h1>Admin Panel</h1>
+    <p class="sub">Masuk dengan akun Google yang terdaftar sebagai admin Catatan Petani.</p>
+    <button class="btn-google" id="btn-login">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.56 2.7-3.87 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.55-1.84.87-3.06.87-2.36 0-4.36-1.6-5.07-3.75H.92v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.93 10.68A5.4 5.4 0 0 1 3.64 9c0-.58.1-1.16.29-1.68V4.99H.92A9 9 0 0 0 0 9c0 1.45.35 2.83.92 4.01l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .92 4.99l3.01 2.33C4.64 5.18 6.64 3.58 9 3.58z"/></svg>
+      Masuk dengan Google
+    </button>
+    <div class="access-denied" id="denied">
+      <h3>🚫 Akses Ditolak</h3>
+      <p>Akun ini tidak terdaftar sebagai admin. Pastikan kamu login dengan akun Google yang benar.</p>
+    </div>
+  </div>
+
+  <!-- Main Admin -->
+  <div id="s-main">
+    <header>
+      <div class="hdr-inner">
+        <div class="hdr-brand">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <h1>Admin Panel</h1>
+              <span class="hdr-badge">Catatan Petani</span>
+            </div>
+            <div id="hdr-sub" style="font-size:11px;color:var(--t2);margin-top:2px;"></div>
+          </div>
+        </div>
+        <div class="hdr-right">
+          <img class="admin-avatar" id="admin-avatar" src="" alt="">
+          <button class="btn-logout" id="btn-logout">Keluar</button>
+        </div>
+      </div>
+    </header>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-overview" onclick="switchTab('overview')">📊 Overview</button>
+      <button class="tab-btn" id="tab-users" onclick="switchTab('users')">👤 Pengguna</button>
+      <button class="tab-btn" id="tab-active" onclick="switchTab('active')">🌱 Tanaman Aktif</button>
+    </div>
+    <div id="content"></div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getDatabase,ref,onValue,get}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ── Config Firebase ───────────────────────
+let fbCfg;
+try{
+  const r=await fetch('/api/firebase-config');
+  if(!r.ok)throw new Error('Status '+r.status);
+  fbCfg=await r.json();
+}catch(e){
+  el('s-load').innerHTML='<p style="padding:24px;text-align:center;color:#F8FAFC;font-size:14px;line-height:1.6">Gagal memuat config Firebase: '+e.message+'</p>';
+  throw e;
+}
+
+// ── Admin UID dari env Vercel ─────────────
+let ADMIN_UID;
+try{
+  const r=await fetch('/api/admin-uid');
+  const d=await r.json();
+  if(!r.ok||!d.adminUid)throw new Error(d.error||'ADMIN_UID kosong');
+  ADMIN_UID=d.adminUid;
+}catch(e){
+  el('s-load').innerHTML='<p style="padding:24px;text-align:center;color:#F8FAFC;font-size:14px;line-height:1.6">⚙️ Gagal memuat konfigurasi admin:<br><strong>'+e.message+'</strong><br><br>Pastikan variabel <code style="background:rgba(255,255,255,.1);padding:2px 8px;border-radius:6px">ADMIN_UID</code> sudah diatur di Vercel → Project Settings → Environment Variables, lalu redeploy.</p>';
+  throw e;
+}
+const app=initializeApp(fbCfg);
+const auth=getAuth(app);
+const db=getDatabase(app);
+const provider=new GoogleAuthProvider();
+
+const el=id=>document.getElementById(id);
+const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const fmtRp=n=>{const v=parseFloat(n)||0;if(v>=1e9)return'Rp '+(v/1e9).toFixed(1)+' M';if(v>=1e6)return'Rp '+(v/1e6).toFixed(1)+' Jt';return'Rp '+Math.round(v).toLocaleString('id-ID');};
+const fmtTgl=ts=>{if(!ts)return'—';return new Date(ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
+const todayStr=()=>new Date().toISOString().split('T')[0];
+const hss=(tanam)=>{if(!tanam)return 0;return Math.max(0,Math.floor((new Date()-new Date(tanam+'T00:00:00'))/864e5));};
+
+let allData={};
+let currentTab='overview';
+let dataUnsub=null;
+let toastTimer;
+function toast(m){const t=el('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}
+
+// ── Auth ──────────────────────────────────
+el('btn-login').addEventListener('click',async()=>{
+  try{await signInWithPopup(auth,provider);}
+  catch(e){toast('Login gagal: '+(e.code||e.message));}
+});
+el('btn-logout').addEventListener('click',async()=>{
+  if(confirm('Keluar dari Admin Panel?'))await signOut(auth);
+});
+
+onAuthStateChanged(auth,user=>{
+  el('s-load').style.display='none';
+  el('denied').style.display='none';
+  if(user){
+    if(user.uid!==ADMIN_UID){
+      el('s-login').style.display='flex';
+      el('denied').style.display='block';
+      signOut(auth);return;
+    }
+    el('s-login').style.display='none';
+    el('s-main').style.display='flex';
+    el('admin-avatar').src=user.photoURL||'';
+    el('hdr-sub').textContent='Login sebagai '+user.displayName;
+    loadAllData();
+  }else{
+    if(dataUnsub){dataUnsub();dataUnsub=null;}
+    el('s-main').style.display='none';
+    el('s-login').style.display='flex';
+  }
+});
+
+// ── Data Loading ──────────────────────────
+function loadAllData(){
+  el('content').innerHTML='<div class="empty"><div class="em">⏳</div><p>Memuat semua data...</p></div>';
+  if(dataUnsub)dataUnsub();
+  dataUnsub=onValue(ref(db,'users/'),snap=>{
+    allData=snap.val()||{};
+    renderCurrentTab();
+    // update header sub
+    const uidCount=Object.keys(allData).length;
+    el('hdr-sub').textContent=`${uidCount} pengguna terdaftar`;
+  });
+}
+
+// ── Stats Compute ─────────────────────────
+function computeStats(){
+  let totalUsers=0,totalCats=0,totalSeasons=0,totalLahans=0,totalActive=0,totalPerawatan=0,totalPanen=0,totalPendapatan=0;
+  const cropCount={};
+  const recentUsers=[];
+  const activeLahans=[];
+
+  Object.entries(allData).forEach(([uid,ud])=>{
+    if(!ud)return;
+    totalUsers++;
+    const profile=ud.profile||{};
+    recentUsers.push({uid,profile,lastSeen:profile.lastSeen||0});
+
+    // categories
+    const cats=ud.categories||{};
+    totalCats+=Object.keys(cats).length;
+    Object.values(cats).forEach(c=>{
+      const n=(c.name||'').toLowerCase();
+      if(n.includes('padi'))cropCount['Padi']=(cropCount['Padi']||0)+1;
+      else if(n.includes('jagung'))cropCount['Jagung']=(cropCount['Jagung']||0)+1;
+      else if(n.includes('cabai'))cropCount['Cabai']=(cropCount['Cabai']||0)+1;
+      else if(n.includes('tomat'))cropCount['Tomat']=(cropCount['Tomat']||0)+1;
+      else if(n.includes('bawang'))cropCount['Bawang']=(cropCount['Bawang']||0)+1;
+      else if(n.includes('singkong'))cropCount['Singkong']=(cropCount['Singkong']||0)+1;
+      else if(n.includes('talas'))cropCount['Talas']=(cropCount['Talas']||0)+1;
+      else cropCount['Lainnya']=(cropCount['Lainnya']||0)+1;
+    });
+
+    // seasons
+    const seasons=ud.seasons||{};
+    Object.values(seasons).forEach(catSeasons=>{
+      totalSeasons+=Object.keys(catSeasons).length;
+    });
+
+    // lahans
+    const lahans=ud.lahans||{};
+    Object.values(lahans).forEach(seasonLahans=>{
+      Object.entries(seasonLahans).forEach(([lid,l])=>{
+        totalLahans++;
+        totalPendapatan+=parseFloat(l.pendapatan)||0;
+        if(l.panen)totalPanen++;
+        if(l.tanam&&!l.panen){
+          totalActive++;
+          // find cat name for this lahan
+          let catName='',catIcon='📦';
+          Object.values(cats).forEach(c=>{catName=c.name||'';catIcon=c.icon||'📦';});
+          activeLahans.push({uid,profile,lahanId:lid,lahan:l,catName,catIcon});
+        }
+      });
+    });
+
+    // perawatan
+    const perawatan=ud.perawatan||{};
+    Object.values(perawatan).forEach(logs=>{
+      totalPerawatan+=Object.keys(logs).length;
+    });
+  });
+
+  recentUsers.sort((a,b)=>b.lastSeen-a.lastSeen);
+  return{totalUsers,totalCats,totalSeasons,totalLahans,totalActive,totalPerawatan,totalPanen,totalPendapatan,cropCount,recentUsers,activeLahans};
+}
+
+// ── Tab Switching ─────────────────────────
+window.switchTab=function(tab){
+  currentTab=tab;
+  ['overview','users','active'].forEach(t=>{
+    el('tab-'+t).classList.toggle('active',t===tab);
+  });
+  renderCurrentTab();
+};
+
+function renderCurrentTab(){
+  if(currentTab==='overview')renderOverview();
+  else if(currentTab==='users')renderUsers();
+  else if(currentTab==='active')renderActive();
+}
+
+// ── Overview ──────────────────────────────
+function renderOverview(){
+  const s=computeStats();
+  const c=el('content');
+  c.innerHTML='';
+
+  // Stats grid
+  const sg=document.createElement('div');
+  sg.className='stats-grid';
+  sg.innerHTML=`
+    <div class="stat-card glass"><div class="stat-lbl">Total Pengguna</div><div class="stat-val sv-b">${s.totalUsers}</div><div class="stat-sub">Akun Google terdaftar</div></div>
+    <div class="stat-card glass"><div class="stat-lbl">Lahan Aktif</div><div class="stat-val sv-g">${s.totalActive}</div><div class="stat-sub">Sedang ditanam</div></div>
+    <div class="stat-card glass"><div class="stat-lbl">Total Lahan</div><div class="stat-val sv-o">${s.totalLahans}</div><div class="stat-sub">${s.totalPanen} sudah panen</div></div>
+    <div class="stat-card glass"><div class="stat-lbl">Catatan Perawatan</div><div class="stat-val sv-p">${s.totalPerawatan}</div><div class="stat-sub">Dari ${s.totalUsers} petani</div></div>`;
+  c.appendChild(sg);
+
+  // Extra stats
+  const es=document.createElement('div');
+  es.className='glass';
+  es.style.cssText='border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;';
+  es.innerHTML=`
+    <div><div style="font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Total Kategori</div><div style="font-size:20px;font-weight:800;color:var(--t1);">${s.totalCats}</div></div>
+    <div><div style="font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Total Musim</div><div style="font-size:20px;font-weight:800;color:var(--t1);">${s.totalSeasons}</div></div>
+    <div><div style="font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Total Pendapatan</div><div style="font-size:16px;font-weight:800;color:var(--green);">${fmtRp(s.totalPendapatan)}</div></div>
+    <div><div style="font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Sudah Panen</div><div style="font-size:20px;font-weight:800;color:var(--gold);">${s.totalPanen}</div></div>`;
+  c.appendChild(es);
+
+  // Crop distribution chart
+  if(Object.keys(s.cropCount).length){
+    const chartEl=document.createElement('div');
+    chartEl.className='chart-wrap glass';
+    chartEl.style.borderRadius='var(--r)';
+    const maxVal=Math.max(...Object.values(s.cropCount));
+    const colors={'Padi':'#30D158','Jagung':'#FF9F0A','Cabai':'#FF453A','Tomat':'#FF453A','Bawang':'#BF5AF2','Singkong':'#FBBF24','Talas':'#34D399','Lainnya':'#60A5FA'};
+    const rows=Object.entries(s.cropCount).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+      <div class="dist-row">
+        <div class="dist-lbl">${k}</div>
+        <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round(v/maxVal*100)}%;background:${colors[k]||'#60A5FA'};"></div></div>
+        <div class="dist-num">${v}</div>
+      </div>`).join('');
+    chartEl.innerHTML=`<div class="chart-title">Distribusi Jenis Tanaman</div><div class="crop-dist">${rows}</div>`;
+    c.appendChild(chartEl);
+  }
+
+  // Recent users
+  const ruEl=document.createElement('div');
+  ruEl.innerHTML=`<div class="sec-hd"><span class="sec-title">👤 Pengguna Terakhir Aktif</span></div>`;
+  s.recentUsers.slice(0,5).forEach(u=>{
+    const p=u.profile;
+    const initials=(p.name||'?').charAt(0).toUpperCase();
+    const div=document.createElement('div');
+    div.className='user-card glass';
+    div.style.cssText='border-radius:var(--r);margin-bottom:8px;';
+    div.innerHTML=`<div class="user-head" style="cursor:default;">
+      ${p.photoURL?`<img class="user-av" src="${esc(p.photoURL)}" alt="">`:`<div class="user-av">${initials}</div>`}
+      <div class="user-info">
+        <div class="user-name">${esc(p.name||'Pengguna')}</div>
+        <div class="user-email">${esc(p.email||u.uid)}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;"><div style="font-size:10px;color:var(--t3);">${fmtTgl(p.lastSeen)}</div></div>
+    </div>`;
+    ruEl.appendChild(div);
+  });
+  c.appendChild(ruEl);
+}
+
+// ── Users ─────────────────────────────────
+function renderUsers(){
+  const s=computeStats();
+  const c=el('content');
+  c.innerHTML='';
+
+  const sec=document.createElement('div');
+  sec.innerHTML=`<div class="sec-hd"><span class="sec-title">👤 Semua Pengguna</span><span class="sec-badge">${s.totalUsers} Akun</span></div>`;
+
+  s.recentUsers.forEach(u=>{
+    const{uid,profile}=u;
+    const ud=allData[uid]||{};
+    const cats=ud.categories||{};
+    const catList=Object.values(cats);
+    const lahans=ud.lahans||{};
+    let lahanCount=0,activeCount=0,totalPend=0;
+    let catIcons='';
+
+    Object.values(lahans).forEach(sl=>{
+      Object.values(sl).forEach(l=>{
+        lahanCount++;
+        if(l.tanam&&!l.panen)activeCount++;
+        totalPend+=parseFloat(l.pendapatan)||0;
+      });
+    });
+
+    const perawatan=ud.perawatan||{};
+    let logCount=0;
+    Object.values(perawatan).forEach(logs=>logCount+=Object.keys(logs).length);
+
+    catList.slice(0,4).forEach(c=>{
+      const n=(c.name||'').toLowerCase();
+      const chipCls=n.includes('padi')?'chip-g':n.includes('jagung')||n.includes('cabai')||n.includes('tomat')?'chip-o':n.includes('bawang')||n.includes('talas')?'chip-p':'chip-b';
+      catIcons+=`<span class="cat-chip ${chipCls}">${c.icon||''} ${esc(c.name||'')}</span>`;
+    });
+    if(catList.length>4)catIcons+=`<span class="cat-chip chip-d">+${catList.length-4} lagi</span>`;
+
+    const initials=(profile.name||'?').charAt(0).toUpperCase();
+    const card=document.createElement('div');
+    card.className='user-card glass';
+    card.style.cssText='border-radius:var(--r);margin-bottom:10px;';
+    card.innerHTML=`
+      <div class="user-head" onclick="this.parentElement.classList.toggle('open')">
+        ${profile.photoURL?`<img class="user-av" src="${esc(profile.photoURL)}" alt="">`:`<div class="user-av">${initials}</div>`}
+        <div class="user-info">
+          <div class="user-name">${esc(profile.name||'Pengguna')}</div>
+          <div class="user-email">${esc(profile.email||uid)}</div>
+        </div>
+        <div class="user-stats">
+          <div class="us"><div class="us-v sv-g">${activeCount}</div><div class="us-l">Aktif</div></div>
+          <div class="us"><div class="us-v sv-o">${lahanCount}</div><div class="us-l">Lahan</div></div>
+          <div class="us"><div class="us-v sv-p">${logCount}</div><div class="us-l">Catat</div></div>
+        </div>
+        <div class="user-chev">⌄</div>
+      </div>
+      <div class="user-body">
+        <div style="margin-bottom:10px;">${catIcons||'<span style="color:var(--t3);font-size:12px;">Belum ada kategori</span>'}</div>
+        <div class="user-detail-row"><div class="ud-ico">📅</div><div class="ud-info"><div class="ud-name">Total Musim Tanam</div><div class="ud-sub">${countSeasons(ud)} musim</div></div></div>
+        <div class="user-detail-row"><div class="ud-ico">💰</div><div class="ud-info"><div class="ud-name">Total Pendapatan Tercatat</div><div class="ud-sub">${fmtRp(totalPend)}</div></div></div>
+        <div class="user-detail-row"><div class="ud-ico">🕐</div><div class="ud-info"><div class="ud-name">Terakhir Aktif</div><div class="ud-sub">${fmtTgl(profile.lastSeen)}</div></div></div>
+        <div class="user-detail-row"><div class="ud-ico">🔑</div><div class="ud-info"><div class="ud-name">UID</div><div class="ud-sub" style="font-size:10px;word-break:break-all;">${esc(uid)}</div></div></div>
+      </div>`;
+    sec.appendChild(card);
+  });
+
+  c.appendChild(sec);
+}
+
+function countSeasons(ud){
+  let n=0;
+  Object.values(ud.seasons||{}).forEach(cs=>n+=Object.keys(cs).length);
+  return n;
+}
+
+// ── Active Crops ──────────────────────────
+function renderActive(){
+  const s=computeStats();
+  const c=el('content');
+  c.innerHTML='';
+
+  const sec=document.createElement('div');
+  sec.innerHTML=`<div class="sec-hd"><span class="sec-title">🌱 Semua Tanaman Aktif</span><span class="sec-badge">${s.totalActive} Lahan</span></div>`;
+
+  if(!s.activeLahans.length){
+    const emp=document.createElement('div');
+    emp.className='empty';
+    emp.innerHTML='<div class="em">🌱</div><p>Belum ada lahan yang sedang aktif (sudah tanam, belum panen) dari semua pengguna.</p>';
+    sec.appendChild(emp);
+    c.appendChild(sec);
+    return;
+  }
+
+  // Sort by age descending
+  s.activeLahans.sort((a,b)=>hss(b.lahan.tanam)-hss(a.lahan.tanam));
+
+  s.activeLahans.forEach(item=>{
+    const{lahan,catName,catIcon,profile}=item;
+    const h=hss(lahan.tanam);
+    const fase=getFase(h,catName);
+    const icoC=catName?.toLowerCase().includes('padi')||catName?.toLowerCase().includes('talas')||catName?.toLowerCase().includes('singkong')?'ci-g':catName?.toLowerCase().includes('jagung')||catName?.toLowerCase().includes('cabai')||catName?.toLowerCase().includes('tomat')?'ci-o':catName?.toLowerCase().includes('bawang')?'ci-p':'ci-d';
+
+    const card=document.createElement('div');
+    card.className='crop-card';
+    card.style.marginBottom='8px';
+    card.innerHTML=`
+      <div class="crop-top">
+        <div class="crop-ico ${icoC}">${catIcon}</div>
+        <div class="crop-meta">
+          <div class="crop-origin">${esc(catName)}</div>
+          <div class="crop-name-t">${esc(lahan.name||'(tanpa nama)')}</div>
+          <div class="crop-owner">👤 ${esc(profile.name||'Pengguna')} · ${esc(profile.email||'—')}</div>
+        </div>
+        <div class="crop-right">
+          <span class="fase-badge ${fase.cls}">${fase.label}</span>
+          <div class="crop-age">${h} <span>hari</span></div>
+        </div>
+      </div>
+      <div style="margin-bottom:2px;display:flex;justify-content:space-between;">
+        <span style="font-size:9.5px;color:rgba(255,255,255,.35);">Tanam ${lahan.tanam||'—'}</span>
+        <span style="font-size:9.5px;color:rgba(255,255,255,.3);">Est. panen ~${Math.max(fase.max-h,0)} hari lagi</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill ${fase.bar}" style="width:${Math.min(fase.pct,100)}%"></div></div>`;
+    sec.appendChild(card);
+  });
+  c.appendChild(sec);
+}
+
+// ── getFase (shared with main app) ────────
+function getFase(h,catName){
+  const nm=(catName||'').toLowerCase();
+  if(nm.includes('padi')){
+    const max=110;
+    if(h<21)return{label:'Vegetatif Awal',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};
+    if(h<55)return{label:'Vegetatif Aktif',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};
+    if(h<80)return{label:'Generatif',cls:'fb-g',bar:'bg-p',pct:Math.round(h/max*100),max};
+    if(h<95)return{label:'Pengisian Gabah',cls:'fb-b',bar:'bg-o',pct:Math.round(h/max*100),max};
+    return{label:'Siap Panen',cls:'fb-p',bar:'bg-g',pct:Math.min(Math.round(h/max*100),98),max};
+  }
+  if(nm.includes('jagung')){const max=90;if(h<30)return{label:'Vegetatif',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};if(h<60)return{label:'Pembungaan',cls:'fb-g',bar:'bg-p',pct:Math.round(h/max*100),max};if(h<80)return{label:'Pengisian Biji',cls:'fb-b',bar:'bg-o',pct:Math.round(h/max*100),max};return{label:'Siap Panen',cls:'fb-p',bar:'bg-g',pct:Math.min(Math.round(h/max*100),98),max};}
+  if(nm.includes('cabai')){const max=90;if(h<25)return{label:'Vegetatif',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};if(h<50)return{label:'Berbunga',cls:'fb-g',bar:'bg-p',pct:Math.round(h/max*100),max};if(h<75)return{label:'Pembuahan',cls:'fb-b',bar:'bg-o',pct:Math.round(h/max*100),max};return{label:'Panen Bertahap',cls:'fb-p',bar:'bg-g',pct:Math.min(Math.round(h/max*100),98),max};}
+  if(nm.includes('tomat')){const max=80;if(h<20)return{label:'Bibit',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};if(h<40)return{label:'Vegetatif',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};if(h<60)return{label:'Berbunga',cls:'fb-g',bar:'bg-p',pct:Math.round(h/max*100),max};return{label:'Pembuahan',cls:'fb-b',bar:'bg-o',pct:Math.min(Math.round(h/max*100),98),max};}
+  if(nm.includes('bawang')){const max=65;if(h<25)return{label:'Vegetatif',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};if(h<50)return{label:'Pembentukan Umbi',cls:'fb-g',bar:'bg-p',pct:Math.round(h/max*100),max};return{label:'Siap Panen',cls:'fb-p',bar:'bg-g',pct:Math.min(Math.round(h/max*100),98),max};}
+  if(nm.includes('singkong')||nm.includes('ketela')){const max=270;if(h<60)return{label:'Vegetatif Awal',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};if(h<150)return{label:'Pembentukan Ubi',cls:'fb-g',bar:'bg-p',pct:Math.round(h/max*100),max};return{label:'Pembesaran Ubi',cls:'fb-b',bar:'bg-o',pct:Math.min(Math.round(h/max*100),98),max};}
+  if(nm.includes('talas')){const max=180;if(h<45)return{label:'Vegetatif Awal',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};if(h<100)return{label:'Pembentukan Umbi',cls:'fb-g',bar:'bg-p',pct:Math.round(h/max*100),max};return{label:'Pembesaran Umbi',cls:'fb-b',bar:'bg-o',pct:Math.min(Math.round(h/max*100),98),max};}
+  const max=90;
+  if(h<max*0.4)return{label:'Vegetatif',cls:'fb-v',bar:'bg-b',pct:Math.round(h/max*100),max};
+  if(h<max*0.75)return{label:'Generatif',cls:'fb-g',bar:'bg-p',pct:Math.round(h/max*100),max};
+  return{label:'Menjelang Panen',cls:'fb-b',bar:'bg-o',pct:Math.min(Math.round(h/max*100),98),max};
+}
+
+// Progress bar colors inline (no CSS class needed)
+document.addEventListener('DOMContentLoaded',()=>{});
+</script>
+<style>
+.bg-b{background:linear-gradient(90deg,#60A5FA,#818CF8);}
+.bg-p{background:linear-gradient(90deg,#BF5AF2,#EC4899);}
+.bg-o{background:linear-gradient(90deg,#FF9F0A,#F97316);}
+.bg-g{background:linear-gradient(90deg,#30D158,#059669);}
+</style>
+</body>
+</html>

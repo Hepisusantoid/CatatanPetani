@@ -138,7 +138,44 @@ header{background:rgba(8,4,30,.8);backdrop-filter:blur(24px);-webkit-backdrop-fi
 .prog-wrap{height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;}
 .prog-fill{height:100%;border-radius:4px;}
 
-/* Empty */
+/* Drill-down hierarchy */
+.drilldown{padding:12px 14px;border-top:1px solid rgba(255,255,255,.07);}
+.cat-block{margin-bottom:14px;}
+.cat-block:last-child{margin-bottom:0;}
+.cat-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.cat-hd-ico{font-size:18px;}
+.cat-hd-name{font-size:13px;font-weight:800;color:var(--t1);letter-spacing:-.1px;}
+.cat-hd-cnt{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.08);color:var(--t2);}
+.season-block{margin-left:10px;margin-bottom:10px;border-left:2px solid rgba(255,255,255,.1);padding-left:12px;}
+.season-hd{font-size:12px;font-weight:700;color:var(--orange);margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.season-hd::before{content:'📅';font-size:11px;}
+.lahan-block{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+.lahan-block:last-child{margin-bottom:0;}
+.lahan-hd-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
+.lahan-hd-name{font-size:13px;font-weight:700;color:var(--t1);}
+.lahan-hd-luas{font-size:10px;font-weight:700;background:rgba(96,165,250,.18);color:var(--blue);padding:2px 7px;border-radius:20px;margin-left:5px;}
+.lahan-hd-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;flex-shrink:0;}
+.ls-panen{background:rgba(48,209,88,.18);color:var(--green);}
+.ls-aktif{background:rgba(255,159,10,.18);color:var(--orange);}
+.lahan-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:7px;}
+.lahan-meta-item{font-size:11px;color:var(--t2);}
+.lahan-meta-item strong{color:var(--t1);}
+.lahan-hasil-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;}
+.lh-box{background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.15);border-radius:8px;padding:6px 8px;}
+.lh-box-l{font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;}
+.lh-box-v{font-size:12px;font-weight:800;color:#fff;}
+.perawatan-hd{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.log-compact{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.log-compact:last-child{border-bottom:none;}
+.lc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.lc-g{background:var(--green);}.lc-o{background:var(--orange);}.lc-b{background:var(--blue);}
+.lc-jenis{font-size:12px;font-weight:600;color:var(--t1);}
+.lc-meta{font-size:10px;color:var(--t3);margin-top:1px;}
+.more-logs{font-size:10px;color:var(--t3);font-style:italic;padding-top:4px;}
+.no-data{font-size:11px;color:var(--t3);font-style:italic;padding:4px 0;}
+.user-email-row{display:flex;align-items:center;gap:5px;margin-top:2px;}
+.uid-copy{font-size:9px;background:rgba(255,255,255,.08);color:var(--t3);padding:1px 6px;border-radius:4px;cursor:pointer;border:none;font-family:inherit;}
+.uid-copy:active{background:rgba(48,209,88,.2);color:var(--green);}
 .empty{text-align:center;padding:44px 20px;color:var(--t2);}
 .empty .em{font-size:40px;margin-bottom:10px;}
 .empty p{font-size:13px;line-height:1.5;}
@@ -442,11 +479,11 @@ function renderUsers(){
     const{uid,profile}=u;
     const ud=allData[uid]||{};
     const cats=ud.categories||{};
-    const catList=Object.values(cats);
     const lahans=ud.lahans||{};
-    let lahanCount=0,activeCount=0,totalPend=0;
-    let catIcons='';
+    const perawatan=ud.perawatan||{};
 
+    // Hitung stats
+    let lahanCount=0,activeCount=0,logCount=0,totalPend=0;
     Object.values(lahans).forEach(sl=>{
       Object.values(sl).forEach(l=>{
         lahanCount++;
@@ -454,28 +491,24 @@ function renderUsers(){
         totalPend+=parseFloat(l.pendapatan)||0;
       });
     });
-
-    const perawatan=ud.perawatan||{};
-    let logCount=0;
     Object.values(perawatan).forEach(logs=>logCount+=Object.keys(logs).length);
 
-    catList.slice(0,4).forEach(c=>{
-      const n=(c.name||'').toLowerCase();
-      const chipCls=n.includes('padi')?'chip-g':n.includes('jagung')||n.includes('cabai')||n.includes('tomat')?'chip-o':n.includes('bawang')||n.includes('talas')?'chip-p':'chip-b';
-      catIcons+=`<span class="cat-chip ${chipCls}">${c.icon||''} ${esc(c.name||'')}</span>`;
-    });
-    if(catList.length>4)catIcons+=`<span class="cat-chip chip-d">+${catList.length-4} lagi</span>`;
-
     const initials=(profile.name||'?').charAt(0).toUpperCase();
+    const isNoProfile=!profile.name&&!profile.email;
+    const displayEmail=profile.email||(isNoProfile?'Belum ada profil — minta user login ulang':'');
+
     const card=document.createElement('div');
     card.className='user-card glass';
-    card.style.cssText='border-radius:var(--r);margin-bottom:10px;';
+    card.style.cssText='border-radius:var(--r);margin-bottom:10px;overflow:hidden;';
     card.innerHTML=`
-      <div class="user-head" onclick="this.parentElement.classList.toggle('open')">
-        ${profile.photoURL?`<img class="user-av" src="${esc(profile.photoURL)}" alt="">`:`<div class="user-av">${initials}</div>`}
+      <div class="user-head" onclick="this.closest('.user-card').classList.toggle('open')">
+        ${profile.photoURL?`<img class="user-av" src="${esc(profile.photoURL)}" alt="">`:`<div class="user-av" style="background:${uid2color(uid)};">${initials}</div>`}
         <div class="user-info">
           <div class="user-name">${esc(profile.name||'Pengguna')}</div>
-          <div class="user-email">${esc(profile.email||uid)}</div>
+          <div style="margin-top:2px;">
+            <div class="user-email">${esc(displayEmail)}</div>
+            ${!isNoProfile?`<button class="uid-copy" onclick="event.stopPropagation();copyUid('${esc(uid)}')" title="Salin UID">UID ${uid.slice(0,8)}…</button>`:''}
+          </div>
         </div>
         <div class="user-stats">
           <div class="us"><div class="us-v sv-g">${activeCount}</div><div class="us-l">Aktif</div></div>
@@ -484,17 +517,143 @@ function renderUsers(){
         </div>
         <div class="user-chev">⌄</div>
       </div>
-      <div class="user-body">
-        <div style="margin-bottom:10px;">${catIcons||'<span style="color:var(--t3);font-size:12px;">Belum ada kategori</span>'}</div>
-        <div class="user-detail-row"><div class="ud-ico">📅</div><div class="ud-info"><div class="ud-name">Total Musim Tanam</div><div class="ud-sub">${countSeasons(ud)} musim</div></div></div>
-        <div class="user-detail-row"><div class="ud-ico">💰</div><div class="ud-info"><div class="ud-name">Total Pendapatan Tercatat</div><div class="ud-sub">${fmtRp(totalPend)}</div></div></div>
-        <div class="user-detail-row"><div class="ud-ico">🕐</div><div class="ud-info"><div class="ud-name">Terakhir Aktif</div><div class="ud-sub">${fmtTgl(profile.lastSeen)}</div></div></div>
-        <div class="user-detail-row"><div class="ud-ico">🔑</div><div class="ud-info"><div class="ud-name">UID</div><div class="ud-sub" style="font-size:10px;word-break:break-all;">${esc(uid)}</div></div></div>
+      <div class="user-body" style="display:none;">
+        <div style="padding:10px 14px 6px;border-top:1px solid rgba(255,255,255,.07);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+            <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:9px 11px;">
+              <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Total Pendapatan</div>
+              <div style="font-size:16px;font-weight:800;color:var(--green);">${fmtRp(totalPend)}</div>
+            </div>
+            <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:9px 11px;">
+              <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Terakhir Aktif</div>
+              <div style="font-size:11px;font-weight:600;color:var(--t1);">${fmtTgl(profile.lastSeen)}</div>
+            </div>
+          </div>
+          ${buildDrilldown(uid,ud)}
+        </div>
       </div>`;
+
+    // Toggle expand
+    card.querySelector('.user-head').addEventListener('click',function(){
+      const body=card.querySelector('.user-body');
+      const open=card.classList.toggle('open');
+      body.style.display=open?'block':'none';
+      card.querySelector('.user-chev').style.transform=open?'rotate(180deg)':'';
+    });
+
     sec.appendChild(card);
   });
 
   c.appendChild(sec);
+}
+
+function uid2color(uid){
+  const colors=['rgba(48,209,88,.3)','rgba(96,165,250,.3)','rgba(191,90,242,.3)','rgba(255,159,10,.3)','rgba(255,69,58,.3)'];
+  let h=0;for(let i=0;i<uid.length;i++)h=(h*31+uid.charCodeAt(i))%colors.length;
+  return colors[h];
+}
+
+window.copyUid=function(uid){
+  navigator.clipboard?.writeText(uid).then(()=>toast('UID disalin ✓')).catch(()=>toast('Salin manual: '+uid.slice(0,20)+'...'));
+};
+
+function buildDrilldown(uid,ud){
+  const cats=ud.categories||{};
+  const seasons=ud.seasons||{};
+  const lahans=ud.lahans||{};
+  const perawatan=ud.perawatan||{};
+
+  if(!Object.keys(cats).length)return'<div class="no-data" style="padding:8px 0;">Belum ada kategori.</div>';
+
+  const catIds=Object.keys(cats).sort((a,b)=>(cats[a].order||0)-(cats[b].order||0));
+  let html='<div class="drilldown" style="padding:0;">';
+
+  catIds.forEach(catId=>{
+    const cat=cats[catId];
+    const catSeasons=seasons[catId]||{};
+    const seasonIds=Object.keys(catSeasons).sort((a,b)=>(catSeasons[a].order||0)-(catSeasons[b].order||0));
+
+    html+=`<div class="cat-block">
+      <div class="cat-hd">
+        <span class="cat-hd-ico">${cat.icon||'📦'}</span>
+        <span class="cat-hd-name">${esc(cat.name||'—')}</span>
+        <span class="cat-hd-cnt">${seasonIds.length} musim</span>
+      </div>`;
+
+    if(!seasonIds.length){
+      html+='<div class="no-data" style="margin-left:10px;padding:4px 0;">Belum ada musim tanam.</div>';
+    }
+
+    seasonIds.forEach(seasonId=>{
+      const season=catSeasons[seasonId];
+      const seasonLahans=lahans[seasonId]||{};
+      const lahanIds=Object.keys(seasonLahans).sort((a,b)=>(seasonLahans[a].order||0)-(seasonLahans[b].order||0));
+
+      html+=`<div class="season-block">
+        <div class="season-hd">${esc(season.name||'—')} <span style="font-size:10px;color:var(--t3);font-weight:500;">(${lahanIds.length} lahan)</span></div>`;
+
+      if(!lahanIds.length){
+        html+='<div class="no-data">Belum ada lahan.</div>';
+      }
+
+      lahanIds.forEach(lahanId=>{
+        const l=seasonLahans[lahanId];
+        const isAktif=l.tanam&&!l.panen;
+        const isPanen=!!l.panen;
+        const umur=l.tanam?Math.max(0,Math.floor((new Date()-new Date(l.tanam+'T00:00:00'))/864e5)):null;
+        const logs=perawatan[lahanId]||{};
+        const logArr=Object.values(logs).sort((a,b)=>b.tanggal?.localeCompare(a.tanggal||'')||0);
+
+        const dotCls=jenis=>{const j=(jenis||'').toLowerCase();return j.includes('semprot')?'lc-g':j.includes('pupuk')?'lc-o':'lc-b';};
+
+        const hasilHtml=(l.berat||l.karung||l.pendapatan)?`
+          <div class="lahan-hasil-row">
+            ${l.karung?`<div class="lh-box"><div class="lh-box-l">Karung</div><div class="lh-box-v">${l.karung}</div></div>`:''}
+            ${l.berat?`<div class="lh-box"><div class="lh-box-l">Berat</div><div class="lh-box-v">${Number(l.berat).toLocaleString('id-ID')} kg</div></div>`:''}
+            ${l.pendapatan?`<div class="lh-box"><div class="lh-box-l">Pendapatan</div><div class="lh-box-v">${fmtRp(l.pendapatan)}</div></div>`:''}
+          </div>`:'';
+
+        const logHtml=logArr.length?`
+          <div class="perawatan-hd">📝 Perawatan <span style="background:rgba(96,165,250,.18);color:var(--blue);padding:1px 6px;border-radius:10px;font-size:9px;">${logArr.length} catatan</span></div>
+          ${logArr.slice(0,4).map(log=>`
+            <div class="log-compact">
+              <div class="lc-dot ${dotCls(log.jenis)}"></div>
+              <div>
+                <div class="lc-jenis">${esc(log.jenis||'—')}</div>
+                <div class="lc-meta">${log.tanggal||'—'}${l.tanam?` · HSS ${Math.max(0,Math.floor((new Date((log.tanggal||'')+'T00:00:00')-new Date(l.tanam+'T00:00:00'))/864e5))}`:''} ${log.catatan?'· '+esc(log.catatan.slice(0,40))+(log.catatan.length>40?'…':''):''}</div>
+              </div>
+            </div>`).join('')}
+          ${logArr.length>4?`<div class="more-logs">+ ${logArr.length-4} catatan lainnya</div>`:''}
+        `:'<div class="no-data">Belum ada catatan perawatan.</div>';
+
+        html+=`<div class="lahan-block">
+          <div class="lahan-hd-row">
+            <div>
+              <span class="lahan-hd-name">${esc(l.name||'(tanpa nama)')}</span>
+              ${l.luas?`<span class="lahan-hd-luas">📐 ${l.luas} ha</span>`:''}
+            </div>
+            <span class="lahan-hd-status ${isPanen?'ls-panen':'ls-aktif'}">${isPanen?'✓ Panen':isAktif?`🌱 ${umur} hari`:'Belum tanam'}</span>
+          </div>
+          <div class="lahan-meta">
+            ${l.varietas?`<div class="lahan-meta-item">Varietas: <strong>${esc(l.varietas)}</strong></div>`:''}
+            ${l.tanam?`<div class="lahan-meta-item">Tanam: <strong>${l.tanam}</strong></div>`:''}
+            ${l.panen?`<div class="lahan-meta-item">Panen: <strong>${l.panen}</strong></div>`:''}
+            ${l.pengepul?`<div class="lahan-meta-item">Pengepul: <strong>${esc(l.pengepul)}</strong></div>`:''}
+            ${l.harga?`<div class="lahan-meta-item">Harga: <strong>Rp ${Number(l.harga).toLocaleString('id-ID')}/kg</strong></div>`:''}
+          </div>
+          ${hasilHtml}
+          ${logHtml}
+        </div>`;
+      });
+
+      html+='</div>'; // season-block
+    });
+
+    html+='</div>'; // cat-block
+  });
+
+  html+='</div>';
+  return html;
 }
 
 function countSeasons(ud){

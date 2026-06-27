@@ -501,7 +501,7 @@ function renderUsers(){
     card.className='user-card glass';
     card.style.cssText='border-radius:var(--r);margin-bottom:10px;overflow:hidden;';
     card.innerHTML=`
-      <div class="user-head" onclick="this.closest('.user-card').classList.toggle('open')">
+      <div class="user-head">
         ${profile.photoURL?`<img class="user-av" src="${esc(profile.photoURL)}" alt="">`:`<div class="user-av" style="background:${uid2color(uid)};">${initials}</div>`}
         <div class="user-info">
           <div class="user-name">${esc(profile.name||'Pengguna')}</div>
@@ -515,7 +515,7 @@ function renderUsers(){
           <div class="us"><div class="us-v sv-o">${lahanCount}</div><div class="us-l">Lahan</div></div>
           <div class="us"><div class="us-v sv-p">${logCount}</div><div class="us-l">Catat</div></div>
         </div>
-        <div class="user-chev">⌄</div>
+        <div class="user-chev" style="transition:transform .2s;">⌄</div>
       </div>
       <div class="user-body" style="display:none;">
         <div style="padding:10px 14px 6px;border-top:1px solid rgba(255,255,255,.07);">
@@ -533,12 +533,14 @@ function renderUsers(){
         </div>
       </div>`;
 
-    // Toggle expand
-    card.querySelector('.user-head').addEventListener('click',function(){
+    // Satu event handler saja — tanpa onclick inline
+    card.querySelector('.user-head').addEventListener('click',function(e){
+      if(e.target.classList.contains('uid-copy'))return; // jangan trigger saat klik copy UID
       const body=card.querySelector('.user-body');
-      const open=card.classList.toggle('open');
-      body.style.display=open?'block':'none';
-      card.querySelector('.user-chev').style.transform=open?'rotate(180deg)':'';
+      const chev=card.querySelector('.user-chev');
+      const isOpen=body.style.display==='block';
+      body.style.display=isOpen?'none':'block';
+      chev.style.transform=isOpen?'':'rotate(180deg)';
     });
 
     sec.appendChild(card);

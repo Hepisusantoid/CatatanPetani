@@ -799,13 +799,26 @@ function renderView(){
 }
 
 // ── HOME (CATEGORIES) ────────────────────────────────
+let seasonCountCache={};
+
 function renderHome(container){
   container.innerHTML=`<div class="sec-label">Kategori Saya</div><div id="cat-list"></div>`;
-  const unsub=onValue(ref(db,`users/${uid}/categories`),snap=>{
+  // Listener kategori
+  const unsub1=onValue(ref(db,`users/${uid}/categories`),snap=>{
     localCats=snap.val()||{};
     renderCatList();
   });
-  allUnsubs.push(unsub);
+  allUnsubs.push(unsub1);
+  // Listener seasons — hitung jumlah musim per kategori secara real-time
+  const unsub2=onValue(ref(db,`users/${uid}/seasons`),snap=>{
+    const allSeasonsData=snap.val()||{};
+    seasonCountCache={};
+    Object.entries(allSeasonsData).forEach(([catId,catSeasons])=>{
+      seasonCountCache[catId]=Object.keys(catSeasons||{}).length;
+    });
+    renderCatList();
+  });
+  allUnsubs.push(unsub2);
 }
 
 function icoClass(icon){
@@ -834,7 +847,7 @@ function renderCatList(){
       <div class="ios-cat-ico ${icoClass(c.icon||'')}">${c.icon||'📦'}</div>
       <div class="ios-cat-info">
         <div class="ios-cat-name">${esc(c.name)}</div>
-        <div class="ios-cat-sub">${c.seasonCount||0} musim tanam</div>
+        <div class="ios-cat-sub">${seasonCountCache[id]||c.seasonCount||0} musim tanam</div>
       </div>
       <div class="btn-icon" onclick="event.stopPropagation();openCatModal('${id}')" style="width:30px;height:30px;border-radius:8px;font-size:13px;">✏️</div>
       <span class="ios-chev">›</span>
@@ -994,26 +1007,38 @@ function lahanCardHTML(id,l,idx,n){
     <div class="lahan-body">
       <div class="field-grid">
         <div class="field-group"><label>Nama Lahan</label><input type="text" value="${esc(l.name||'')}" oninput="onLahanInput('${id}','name',this.value)" placeholder="Nama lahan..."/></div>
-        <div class="field-group"><label>Luas (ha)</label><input type="number" step="0.1" value="${l.luas||''}" oninput="onLahanInput('${id}','luas',this.value)" placeholder="0.5"/></div>
+        <div class="field-group"><label>Luas (ha)</label><input type="text" inputmode="decimal" value="${l.luas?fmtDot(l.luas):''}" oninput="onLahanNumInput('${id}','luas',this)" placeholder="0.5"/></div>
         <div class="field-group"><label>Varietas</label><input type="text" value="${esc(l.varietas||'')}" oninput="onLahanInput('${id}','varietas',this.value)" placeholder="Contoh: Ciherang, IR64..."/></div>
         <div class="field-group"><label>Metode Tanam</label>
           <div class="metode-wrap" id="metode-${id}">${pills}<button class="metode-add" onclick="openMetodeModal('${id}')">＋</button></div>
         </div>
         <div class="field-group"><label>Tgl Tanam</label><input type="date" value="${l.tanam||''}" oninput="onLahanInput('${id}','tanam',this.value)"/></div>
         <div class="field-group"><label>Tgl Panen</label><input type="date" value="${l.panen||''}" oninput="onLahanInput('${id}','panen',this.value)"/></div>
-        <div class="field-group"><label>Ojek (Rp/karung)</label><input type="number" value="${l.ojek||''}" oninput="onLahanInput('${id}','ojek',this.value)" placeholder="0"/></div>
+        <div class="field-group"><label>Ojek (Rp/karung)</label><input type="text" inputmode="numeric" value="${l.ojek?fmtDot(l.ojek):''}" oninput="onLahanNumInput('${id}','ojek',this)" placeholder="0"/></div>
         <div class="field-group"><label>Pengepul</label><input type="text" value="${esc(l.pengepul||'')}" oninput="onLahanInput('${id}','pengepul',this.value)" placeholder="Nama pengepul..."/></div>
       </div>
-      <div class="field-grid">
-        <div class="field-group"><label>Hasil (karung)</label><input type="number" value="${l.karung||''}" oninput="onHasil('${id}','karung',this.value)" placeholder="0"/></div>
-        <div class="field-group"><label>Berat Total (kg)</label><input type="number" value="${l.berat||''}" oninput="onHasil('${id}','berat',this.value)" placeholder="0"/></div>
-        <div class="field-group"><label>Harga (Rp/kg)</label><input type="number" value="${l.harga||''}" oninput="onHasil('${id}','harga',this.value)" placeholder="0"/></div>
-        <div class="field-group"><label>Pendapatan (Rp)</label><input type="number" id="pend-${id}" value="${l.pendapatan||''}" oninput="onLahanInput('${id}','pendapatan',this.value)" placeholder="0"/></div>
+
+      <div style="background:rgba(48,209,88,.06);border:1px solid rgba(48,209,88,.18);border-radius:12px;padding:12px 13px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">🌾 Hasil Panen</div>
+        <div class="field-grid">
+          <div class="field-group"><label>Total Panen (karung)</label><input type="text" inputmode="numeric" id="karung-${id}" value="${l.karung?fmtDot(l.karung):''}" oninput="onBawon('${id}','karung',this)" placeholder="0"/></div>
+          <div class="field-group"><label>Bawon (karung) <span style="font-size:9px;color:var(--text-2);font-weight:400;">bagian pekerja/pengusaha</span></label><input type="text" inputmode="numeric" id="bawon-${id}" value="${l.bawon?fmtDot(l.bawon):''}" oninput="onBawon('${id}','bawon',this)" placeholder="0"/></div>
+        </div>
+        <div style="background:rgba(0,0,0,.15);border-radius:9px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--text-2);">Karung Bersih (yang dijual)</span>
+          <span id="karung-bersih-${id}" style="font-size:16px;font-weight:800;color:var(--green);">${(parseFloat(l.karung||0)-parseFloat(l.bawon||0))>0?fmtDot(parseFloat(l.karung||0)-parseFloat(l.bawon||0)):((l.karung&&!l.bawon)?fmtDot(l.karung):'—')}</span>
+        </div>
+        <div class="field-grid">
+          <div class="field-group"><label>Berat Total (kg)</label><input type="text" inputmode="numeric" id="berat-${id}" value="${l.berat?fmtDot(l.berat):''}" oninput="onHasil('${id}','berat',this)" placeholder="0"/></div>
+          <div class="field-group"><label>Harga (Rp/kg)</label><input type="text" inputmode="numeric" id="harga-${id}" value="${l.harga?fmtDot(l.harga):''}" oninput="onHasil('${id}','harga',this)" placeholder="0"/></div>
+          <div class="field-group"><label>Pendapatan (Rp)</label><input type="text" inputmode="numeric" id="pend-${id}" value="${l.pendapatan?fmtDot(l.pendapatan):''}" oninput="onLahanInput('${id}','pendapatan',rawNum(this.value))" placeholder="0"/></div>
+        </div>
       </div>
+
       <div class="result-row">
         <div class="res-box"><div class="rl">Rata-rata</div><div class="rv" id="rv-rata-${id}">${l.luas&&l.berat?fmtNum(parseFloat(l.berat)/parseFloat(l.luas))+' kg/ha':'—'}</div></div>
         <div class="res-box"><div class="rl">Pendapatan/ha</div><div class="rv" id="rv-perha-${id}">${l.luas&&l.pendapatan?fmtRp(parseFloat(l.pendapatan)/parseFloat(l.luas))+'/ha':'—'}</div></div>
-        <div class="res-box"><div class="rl">kg/karung</div><div class="rv" id="rv-kgkar-${id}">${l.karung&&l.berat?fmtNum(parseFloat(l.berat)/parseFloat(l.karung))+' kg':'—'}</div></div>
+        <div class="res-box"><div class="rl">kg/karung</div><div class="rv" id="rv-kgkar-${id}">${(parseFloat(l.karung||0)-parseFloat(l.bawon||0))>0&&l.berat?fmtNum(parseFloat(l.berat)/(parseFloat(l.karung||0)-parseFloat(l.bawon||0)))+' kg':l.karung&&l.berat?fmtNum(parseFloat(l.berat)/parseFloat(l.karung))+' kg':'—'}</div></div>
       </div>
       <div class="field-grid"><div class="field-group full"><label>Catatan</label><textarea oninput="onLahanInput('${id}','catatan',this.value)" placeholder="Catatan tambahan...">${esc(l.catatan||'')}</textarea></div></div>
 
@@ -1061,6 +1086,80 @@ window.deleteLahan=async function(lahanId){
   showToast('Lahan dihapus.');
 };
 
+// ── FORMAT ANGKA DENGAN TITIK ────────────────────────
+function fmtDot(n){
+  const v=parseFloat(String(n).replace(/\./g,'').replace(',','.'));
+  if(isNaN(v))return'';
+  // integer → format dengan titik ribuan
+  if(Number.isInteger(v))return v.toLocaleString('id-ID');
+  // desimal → biarkan apa adanya
+  return String(n);
+}
+function rawNum(s){
+  // hilangkan titik ribuan, kembalikan nilai numerik sebagai string
+  return String(s||'').replace(/\./g,'').replace(',','.');
+}
+window.onLahanNumInput=function(id,field,inputEl){
+  const raw=rawNum(inputEl.value);
+  const numVal=parseFloat(raw)||0;
+  // format ulang dengan titik saat user selesai ketik (tidak saat di tengah)
+  onLahanInput(id,field,raw||'');
+};
+// Format titik saat input number selesai (onblur)
+document.addEventListener('blur',function(e){
+  if(e.target.getAttribute('inputmode')==='numeric'&&e.target.type==='text'){
+    const raw=rawNum(e.target.value);
+    const num=parseFloat(raw);
+    if(!isNaN(num)&&num>0)e.target.value=num.toLocaleString('id-ID');
+  }
+},true);
+
+// ── BAWON PADI ───────────────────────────────────────
+window.onBawon=function(id,field,inputEl){
+  const raw=rawNum(inputEl.value);
+  onLahanInput(id,field,raw||'');
+  // hitung karung bersih
+  const l=localLahans[id]||{};
+  const totalKarung=parseFloat(field==='karung'?raw:(rawNum(String(l.karung||'0'))))||0;
+  const bawon=parseFloat(field==='bawon'?raw:(rawNum(String(l.bawon||'0'))))||0;
+  const bersih=Math.max(totalKarung-bawon,0);
+  const bersihEl=el('karung-bersih-'+id);
+  if(bersihEl)bersihEl.textContent=bersih>0?bersih.toLocaleString('id-ID'):(totalKarung>0?totalKarung.toLocaleString('id-ID'):'—');
+  // update result boxes
+  updateResultBoxesExt(id);
+};
+
+window.onHasil=function(id,field,inputEl){
+  const raw=rawNum(typeof inputEl==='object'?inputEl.value:inputEl);
+  onLahanInput(id,field,raw||'');
+  const l=localLahans[id]||{};
+  if(field==='berat'||field==='harga'){
+    const berat=parseFloat(field==='berat'?raw:rawNum(String(l.berat||'')))||0;
+    const harga=parseFloat(field==='harga'?raw:rawNum(String(l.harga||'')))||0;
+    const pend=berat&&harga?(berat*harga).toString():'';
+    if(localLahans[id])localLahans[id].pendapatan=pend;
+    const inp=el('pend-'+id);
+    if(inp)inp.value=pend?Number(pend).toLocaleString('id-ID'):'';
+    clearTimeout(saveDbc[id+'_pendapatan']);
+    saveDbc[id+'_pendapatan']=setTimeout(()=>update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{pendapatan:pend}),600);
+  }
+  updateResultBoxesExt(id);
+};
+
+function updateResultBoxesExt(id){
+  const ll=localLahans[id]||{};
+  const berat=parseFloat(rawNum(String(ll.berat||'')))||0;
+  const luas=parseFloat(rawNum(String(ll.luas||'')))||0;
+  const pend=parseFloat(rawNum(String(ll.pendapatan||'')))||0;
+  const karungTotal=parseFloat(rawNum(String(ll.karung||'')))||0;
+  const bawon=parseFloat(rawNum(String(ll.bawon||'')))||0;
+  const karungBersih=Math.max(karungTotal-bawon,0)||karungTotal;
+  const r1=el('rv-rata-'+id),r2=el('rv-perha-'+id),r3=el('rv-kgkar-'+id);
+  if(r1)r1.textContent=luas&&berat?fmtNum(berat/luas)+' kg/ha':'—';
+  if(r2)r2.textContent=luas&&pend?fmtRp(pend/luas)+'/ha':'—';
+  if(r3)r3.textContent=karungBersih&&berat?fmtNum(berat/karungBersih)+' kg':'—';
+}
+
 window.onLahanInput=function(id,field,value){
   if(localLahans[id])localLahans[id][field]=value;
   clearTimeout(saveDbc[id+'_'+field]);
@@ -1073,27 +1172,6 @@ window.onLahanInput=function(id,field,value){
     }
     updateSummary();
   },600);
-};
-
-window.onHasil=function(id,field,value){
-  onLahanInput(id,field,value);
-  const l=localLahans[id]||{};
-  if(field==='berat'||field==='harga'){
-    const berat=parseFloat(field==='berat'?value:l.berat)||0;
-    const harga=parseFloat(field==='harga'?value:l.harga)||0;
-    const pend=berat&&harga?(berat*harga).toString():'';
-    if(localLahans[id])localLahans[id].pendapatan=pend;
-    const inp=el('pend-'+id);if(inp)inp.value=pend?Number(pend).toLocaleString('id-ID'):'';
-    clearTimeout(saveDbc[id+'_pendapatan']);
-    saveDbc[id+'_pendapatan']=setTimeout(()=>update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{pendapatan:pend}),600);
-  }
-  // result boxes
-  const ll=localLahans[id]||{};
-  const berat=parseFloat(ll.berat)||0,luas=parseFloat(ll.luas)||0,pend2=parseFloat(ll.pendapatan)||0,karung=parseFloat(ll.karung)||0;
-  const r1=el('rv-rata-'+id),r2=el('rv-perha-'+id),r3=el('rv-kgkar-'+id);
-  if(r1)r1.textContent=luas&&berat?fmtNum(berat/luas)+' kg/ha':'—';
-  if(r2)r2.textContent=luas&&pend2?fmtRp(pend2/luas)+'/ha':'—';
-  if(r3)r3.textContent=karung&&berat?fmtNum(berat/karung)+' kg':'—';
 };
 
 // ── METODE ───────────────────────────────────────────
@@ -1256,13 +1334,14 @@ window.tambahLog=async function(lahanId){
   if(jenis==='Lainnya'){jenis=el('log-custom-'+lahanId)?.value.trim()||'';if(!jenis){showToast('Ketik nama kegiatan.');return;}}
   if(!tgl){showToast('Pilih tanggal.');return;}
   const catatan=el('log-cat-'+lahanId)?.value.trim()||'';
+  // Fix 3: catatan wajib diisi agar tidak ada log tidak sengaja
+  if(!catatan){showToast('Tulis catatan kegiatan terlebih dahulu.');el('log-cat-'+lahanId)?.focus();return;}
   const logRef=push(ref(db,`users/${uid}/perawatan/${lahanId}`));
   await set(logRef,{tanggal:tgl,jenis,catatan,createdAt:Date.now()});
-  // reset form
   if(jenisEl)jenisEl.value='Penyemprotan';
   const cw=el('custom-wrap-'+lahanId);if(cw)cw.style.display='none';
   const ca=el('log-cat-'+lahanId);if(ca)ca.value='';
-  showToast('Catatan perawatan disimpan.');
+  showToast('✓ Catatan perawatan disimpan.');
 };
 
 window.hapusLog=async function(lahanId,logId){
@@ -1684,12 +1763,12 @@ el('btn-save-quick-log').addEventListener('click',async()=>{
   if(jenis==='Lainnya'){jenis=el('quick-log-custom')?.value.trim()||'';if(!jenis){showToast('Ketik nama kegiatan.');return;}}
   if(!tgl){showToast('Pilih tanggal.');return;}
   const catatan=el('quick-log-cat')?.value.trim()||'';
+  if(!catatan){showToast('Tulis catatan kegiatan terlebih dahulu.');el('quick-log-cat')?.focus();return;}
   if(!_quickLahanId){showToast('Data lahan tidak ditemukan.');return;}
   const logRef=push(ref(db,`users/${uid}/perawatan/${_quickLahanId}`));
   await set(logRef,{tanggal:tgl,jenis,catatan,createdAt:Date.now()});
   closeOverlay('ov-quick-log');
   showToast('✓ Catatan perawatan disimpan.');
-  // refresh jadwal
   if(VS.view==='jadwal'){cleanView();renderView();}
 });
 el('btn-cancel-quick-log').addEventListener('click',()=>closeOverlay('ov-quick-log'));
@@ -1841,4 +1920,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-  </html>
+          </html>

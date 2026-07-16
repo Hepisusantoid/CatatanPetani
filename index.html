@@ -373,6 +373,12 @@ header.glass::before{display:none;}
 /* Toast */
 #toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,15,45,.92);color:var(--text-1);padding:12px 20px;border-radius:30px;font-size:13.5px;font-weight:500;opacity:0;transition:all .25s ease;z-index:50;border:1px solid var(--border-glass);white-space:nowrap;max-width:90%;text-align:center;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#conn-status{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 10px;font-size:12px;font-weight:600;color:#fff;background:rgba(239,68,68,.92);transform:translateY(-100%);transition:transform .25s ease;text-align:center;}
+#conn-status.show{transform:translateY(0);}
+#conn-status .dot{width:7px;height:7px;border-radius:50%;background:#fff;flex-shrink:0;animation:connPulse 1.2s infinite;}
+@keyframes connPulse{0%,100%{opacity:1}50%{opacity:.35}}
+.field-saved-badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--green);opacity:0;transition:opacity .3s ease;margin-left:6px;white-space:nowrap;}
+.field-saved-badge.show{opacity:1;}
 
 @keyframes riseIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 </style>
@@ -545,6 +551,7 @@ header.glass::before{display:none;}
   </div>
 
   <div id="toast"></div>
+  <div id="conn-status"><span class="dot"></span><span id="conn-status-text">Terputus dari internet — perubahan disimpan otomatis saat online kembali</span></div>
 </div>
 
 <script type="module">
@@ -663,6 +670,13 @@ document.addEventListener('click',e=>{
   if(e.target.id==='user-avatar'){
     if(confirm('Keluar dari Catatan Petani?')){signOut(auth);}
   }
+});
+
+// ── STATUS KONEKSI ───────────────────────────────────
+onValue(ref(db,'.info/connected'),snap=>{
+  const bar=el('conn-status');
+  if(snap.val()===true){bar.classList.remove('show');}
+  else{bar.classList.add('show');}
 });
 
 onAuthStateChanged(auth,user=>{
@@ -995,7 +1009,7 @@ function lahanCardHTML(id,l,idx,n){
     <div class="lahan-head" onclick="toggleLahan('${id}')">
       <span class="lahan-num">${idx+1}</span>
       <div class="lahan-name-wrap">
-        <div class="lahan-title">${esc(l.name||'(tanpa nama)')}${luasBadge}</div>
+        <div class="lahan-title">${esc(l.name||'(tanpa nama)')}${luasBadge}<span class="field-saved-badge" id="saved-${id}">✓ Tersimpan</span></div>
         <div class="lahan-sub">${esc(l.varietas||'—')} · ${l.tanam?'Tanam '+fmtTgl(l.tanam):'Belum tanam'}</div>
       </div>
       <div class="lahan-badges">
@@ -1159,7 +1173,7 @@ window.onHasil=function(id,field,inputEl){
     const inp=el('pend-'+id);
     if(inp)inp.value=pend?Number(pend).toLocaleString('id-ID'):'';
     clearTimeout(saveDbc[id+'_pendapatan']);
-    saveDbc[id+'_pendapatan']=setTimeout(()=>update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{pendapatan:pend}),600);
+    saveDbc[id+'_pendapatan']=setTimeout(()=>update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{pendapatan:pend}).then(()=>flashSaved(id)),600);
   }
   updateResultBoxesExt(id);
 };
@@ -1183,7 +1197,7 @@ window.onLahanInput=function(id,field,value){
   clearTimeout(saveDbc[id+'_'+field]);
   saveDbc[id+'_'+field]=setTimeout(()=>{
     if(!uid||!VS.seasonId)return;
-    update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{[field]:value});
+    update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{[field]:value}).then(()=>flashSaved(id));
     if(field==='name'||field==='luas'){
       const lc=document.querySelector(`#lc-${id} .lahan-title`);
       if(lc&&field==='name')lc.childNodes[0] && (lc.childNodes[0].textContent=value||'(tanpa nama)');
@@ -1191,6 +1205,13 @@ window.onLahanInput=function(id,field,value){
     updateSummary();
   },600);
 };
+let flashSavedTimers={};
+function flashSaved(id){
+  const b=el('saved-'+id);if(!b)return;
+  b.classList.add('show');
+  clearTimeout(flashSavedTimers[id]);
+  flashSavedTimers[id]=setTimeout(()=>b.classList.remove('show'),1800);
+}
 
 // ── METODE ───────────────────────────────────────────
 window.openMetodeModal=function(lahanId){
@@ -1938,4 +1959,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-  </html>
+          </html>

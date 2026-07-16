@@ -672,11 +672,38 @@ document.addEventListener('click',e=>{
   }
 });
 
-// ── STATUS KONEKSI ───────────────────────────────────
-onValue(ref(db,'.info/connected'),snap=>{
+// ── STATUS KONEKSI & SINKRONISASI ────────────────────
+let isOnline=true;
+let pendingWrites=0;
+function trackWrite(promise){
+  pendingWrites++;
+  renderConnBar();
+  promise.then(()=>{pendingWrites=Math.max(0,pendingWrites-1);renderConnBar();},()=>{pendingWrites=Math.max(0,pendingWrites-1);renderConnBar();});
+  return promise;
+}
+function renderConnBar(){
   const bar=el('conn-status');
-  if(snap.val()===true){bar.classList.remove('show');}
-  else{bar.classList.add('show');}
+  const txt=el('conn-status-text');
+  const dot=bar.querySelector('.dot');
+  if(!isOnline){
+    bar.style.background='rgba(239,68,68,.92)';
+    dot.style.display='block';
+    txt.textContent=pendingWrites>0
+      ? `Terputus dari internet — ${pendingWrites} perubahan menunggu, akan disinkronkan otomatis saat online kembali`
+      : 'Terputus dari internet — perubahan akan disimpan otomatis saat online kembali';
+    bar.classList.add('show');
+  }else if(pendingWrites>0){
+    bar.style.background='rgba(217,119,6,.92)';
+    dot.style.display='block';
+    txt.textContent='Menyinkronkan perubahan…';
+    bar.classList.add('show');
+  }else{
+    bar.classList.remove('show');
+  }
+}
+onValue(ref(db,'.info/connected'),snap=>{
+  isOnline=snap.val()===true;
+  renderConnBar();
 });
 
 onAuthStateChanged(auth,user=>{
@@ -1173,7 +1200,7 @@ window.onHasil=function(id,field,inputEl){
     const inp=el('pend-'+id);
     if(inp)inp.value=pend?Number(pend).toLocaleString('id-ID'):'';
     clearTimeout(saveDbc[id+'_pendapatan']);
-    saveDbc[id+'_pendapatan']=setTimeout(()=>update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{pendapatan:pend}).then(()=>flashSaved(id)),600);
+    saveDbc[id+'_pendapatan']=setTimeout(()=>trackWrite(update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{pendapatan:pend})).then(()=>flashSaved(id)),600);
   }
   updateResultBoxesExt(id);
 };
@@ -1197,7 +1224,7 @@ window.onLahanInput=function(id,field,value){
   clearTimeout(saveDbc[id+'_'+field]);
   saveDbc[id+'_'+field]=setTimeout(()=>{
     if(!uid||!VS.seasonId)return;
-    update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{[field]:value}).then(()=>flashSaved(id));
+    trackWrite(update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{[field]:value})).then(()=>flashSaved(id));
     if(field==='name'||field==='luas'){
       const lc=document.querySelector(`#lc-${id} .lahan-title`);
       if(lc&&field==='name')lc.childNodes[0] && (lc.childNodes[0].textContent=value||'(tanpa nama)');
@@ -1959,4 +1986,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-          </html>
+      </html>

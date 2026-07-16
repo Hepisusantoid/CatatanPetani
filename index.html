@@ -106,7 +106,7 @@ header.glass::before{display:none;}
 /* Season cards */
 .season-card{border-radius:var(--r-md);padding:16px;display:block;cursor:pointer;transition:transform .15s;animation:riseIn .3s ease both;}
 .season-card:active{transform:scale(.985);}
-.btn-icon{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;}
+.btn-icon{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .btn-icon:active{background:rgba(255,255,255,.18);}
 .chev{color:var(--text-3);font-size:20px;}
 
@@ -121,7 +121,7 @@ header.glass::before{display:none;}
 /* Season card inner layout */
 .sc-header{display:flex;align-items:center;gap:10px;}
 .sc-reorder{display:flex;gap:5px;flex-shrink:0;}
-.sc-arr{font-size:12px !important;width:30px !important;height:30px !important;}
+.sc-arr{font-size:12px !important;width:38px !important;height:38px !important;}
 .sc-arr.disabled{opacity:.22;pointer-events:none;}
 .sc-title-wrap{flex:1;min-width:0;}
 .sc-name{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em;}
@@ -175,9 +175,9 @@ header.glass::before{display:none;}
 .metode-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .metode-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border-glass);background:var(--glass-soft);color:var(--text-2);}
 .metode-pill.active{background:rgba(52,211,153,.2);color:var(--green);border-color:rgba(52,211,153,.4);}
-.pill-del{font-size:10px;opacity:.6;cursor:pointer;line-height:1;}
+.pill-del{font-size:12px;opacity:.6;cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:9px;margin:-9px -9px -9px -3px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .pill-del:hover{opacity:1;}
-.metode-add{width:26px;height:26px;border-radius:50%;background:rgba(52,211,153,.15);border:1.5px dashed rgba(52,211,153,.4);color:var(--green);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.metode-add{width:34px;height:34px;border-radius:50%;background:rgba(52,211,153,.15);border:1.5px dashed rgba(52,211,153,.4);color:var(--green);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 
 /* Result boxes */
 .result-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
@@ -223,7 +223,7 @@ header.glass::before{display:none;}
 .log-tgl{font-size:11px;color:var(--text-3);}
 .log-hss{font-size:10px;font-weight:700;background:rgba(251,146,60,.15);color:var(--orange);padding:2px 7px;border-radius:20px;}
 .log-cat{font-size:13px;color:var(--text-2);line-height:1.4;margin-top:3px;}
-.btn-del-log{background:none;border:none;color:rgba(248,113,113,.5);font-size:13px;cursor:pointer;padding:2px 4px;border-radius:5px;flex-shrink:0;transition:color .15s;}
+.btn-del-log{background:none;border:none;color:rgba(248,113,113,.5);font-size:14px;cursor:pointer;padding:10px;margin:-10px;border-radius:5px;flex-shrink:0;transition:color .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .btn-del-log:hover{color:var(--danger);}
 
 /* Log table */
@@ -1007,7 +1007,7 @@ function lahanCardHTML(id,l,idx,n){
     <div class="lahan-body">
       <div class="field-grid">
         <div class="field-group"><label>Nama Lahan</label><input type="text" value="${esc(l.name||'')}" oninput="onLahanInput('${id}','name',this.value)" placeholder="Nama lahan..."/></div>
-        <div class="field-group"><label>Luas (ha)</label><input type="text" inputmode="decimal" value="${l.luas?fmtDot(l.luas):''}" oninput="onLahanNumInput('${id}','luas',this)" placeholder="0.5"/></div>
+        <div class="field-group"><label>Luas (ha)</label><input type="text" inputmode="decimal" value="${l.luas?fmtDot(l.luas):''}" oninput="onLahanDecimalInput('${id}','luas',this)" placeholder="0.5"/></div>
         <div class="field-group"><label>Varietas</label><input type="text" value="${esc(l.varietas||'')}" oninput="onLahanInput('${id}','varietas',this.value)" placeholder="Contoh: Ciherang, IR64..."/></div>
         <div class="field-group"><label>Metode Tanam</label>
           <div class="metode-wrap" id="metode-${id}">${pills}<button class="metode-add" onclick="openMetodeModal('${id}')">＋</button></div>
@@ -1031,7 +1031,7 @@ function lahanCardHTML(id,l,idx,n){
         <div class="field-grid">
           <div class="field-group"><label>Berat Total (kg)</label><input type="text" inputmode="numeric" id="berat-${id}" value="${l.berat?fmtDot(l.berat):''}" oninput="onHasil('${id}','berat',this)" placeholder="0"/></div>
           <div class="field-group"><label>Harga (Rp/kg)</label><input type="text" inputmode="numeric" id="harga-${id}" value="${l.harga?fmtDot(l.harga):''}" oninput="onHasil('${id}','harga',this)" placeholder="0"/></div>
-          <div class="field-group"><label>Pendapatan (Rp)</label><input type="text" inputmode="numeric" id="pend-${id}" value="${l.pendapatan?fmtDot(l.pendapatan):''}" oninput="onLahanInput('${id}','pendapatan',rawNum(this.value))" placeholder="0"/></div>
+          <div class="field-group"><label>Pendapatan (Rp)</label><input type="text" inputmode="numeric" id="pend-${id}" value="${l.pendapatan?fmtDot(l.pendapatan):''}" oninput="onPendInput('${id}',this)" placeholder="0"/></div>
         </div>
       </div>
 
@@ -1099,24 +1099,42 @@ function rawNum(s){
   // hilangkan titik ribuan, kembalikan nilai numerik sebagai string
   return String(s||'').replace(/\./g,'').replace(',','.');
 }
+// Format titik ribuan LANGSUNG saat user mengetik (live), dengan posisi kursor tetap wajar.
+// Contoh: ketik 1000 -> otomatis tampil 1.000
+function formatNumberLive(inputEl){
+  const before=inputEl.value;
+  const start=inputEl.selectionStart==null?before.length:inputEl.selectionStart;
+  const digitsOnly=before.replace(/[^0-9]/g,'');
+  if(!digitsOnly){inputEl.value='';return'';}
+  const digitsBeforeCursor=before.slice(0,start).replace(/[^0-9]/g,'').length;
+  const formatted=Number(digitsOnly).toLocaleString('id-ID');
+  inputEl.value=formatted;
+  // hitung ulang posisi kursor berdasarkan jumlah digit sebelum kursor asli
+  let pos=formatted.length,seen=0;
+  for(let i=0;i<formatted.length;i++){
+    if(/[0-9]/.test(formatted[i]))seen++;
+    if(seen>=digitsBeforeCursor){pos=i+1;break;}
+  }
+  inputEl.setSelectionRange(pos,pos);
+  return digitsOnly;
+}
 window.onLahanNumInput=function(id,field,inputEl){
-  const raw=rawNum(inputEl.value);
-  const numVal=parseFloat(raw)||0;
-  // format ulang dengan titik saat user selesai ketik (tidak saat di tengah)
+  const raw=formatNumberLive(inputEl);
   onLahanInput(id,field,raw||'');
 };
-// Format titik saat input number selesai (onblur)
-document.addEventListener('blur',function(e){
-  if(e.target.getAttribute('inputmode')==='numeric'&&e.target.type==='text'){
-    const raw=rawNum(e.target.value);
-    const num=parseFloat(raw);
-    if(!isNaN(num)&&num>0)e.target.value=num.toLocaleString('id-ID');
-  }
-},true);
+// Untuk field desimal seperti Luas (ha) - TIDAK diformat titik ribuan karena titik dipakai untuk koma desimal
+window.onLahanDecimalInput=function(id,field,inputEl){
+  const raw=rawNum(inputEl.value);
+  onLahanInput(id,field,raw||'');
+};
+window.onPendInput=function(id,inputEl){
+  const raw=formatNumberLive(inputEl);
+  onLahanInput(id,'pendapatan',raw||'');
+};
 
 // ── BAWON PADI ───────────────────────────────────────
 window.onBawon=function(id,field,inputEl){
-  const raw=rawNum(inputEl.value);
+  const raw=formatNumberLive(inputEl);
   onLahanInput(id,field,raw||'');
   // hitung karung bersih
   const l=localLahans[id]||{};
@@ -1130,7 +1148,7 @@ window.onBawon=function(id,field,inputEl){
 };
 
 window.onHasil=function(id,field,inputEl){
-  const raw=rawNum(typeof inputEl==='object'?inputEl.value:inputEl);
+  const raw=typeof inputEl==='object'?formatNumberLive(inputEl):rawNum(inputEl);
   onLahanInput(id,field,raw||'');
   const l=localLahans[id]||{};
   if(field==='berat'||field==='harga'){
@@ -1920,4 +1938,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-          </html>
+  </html>

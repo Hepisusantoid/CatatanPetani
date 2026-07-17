@@ -734,6 +734,14 @@ onValue(ref(db,'.info/connected'),snap=>{
   renderConnBar();
 });
 
+// ── ANALITIK SEDERHANA (funnel) ──────────────────────
+// Menyimpan event ke users/{uid}/events/{pushId} — dipakai admin panel untuk funnel.
+function trackEvent(name,meta){
+  if(!uid)return;
+  push(ref(db,`users/${uid}/events`),{name,ts:Date.now(),meta:meta||null}).catch(()=>{});
+}
+window.trackEvent=trackEvent;
+
 onAuthStateChanged(auth,user=>{
   cleanAll();
   el('s-loading').style.display='none';
@@ -748,6 +756,7 @@ onAuthStateChanged(auth,user=>{
       photoURL:user.photoURL||'',
       lastSeen:Date.now(),
     }).catch(()=>{});
+    trackEvent('login_berhasil');
     navigate('home');
   }else{
     uid=null;localCats={};localSeasons={};localLahans={};localPerawatan={};
@@ -1145,6 +1154,7 @@ window.toggleLahan=function(id){
 window.addLahan=async function(){
   const lahanRef=push(ref(db,`users/${uid}/lahans/${VS.seasonId}`));
   await set(lahanRef,{name:'',luas:'',varietas:'',metode:'Tabur',metodeList:['Tabur'],tanam:'',panen:'',karung:'',berat:'',harga:'',pendapatan:'',ojek:'',pengepul:'',catatan:'',order:Date.now(),createdAt:Date.now()});
+  trackEvent('lahan_ditambahkan');
   // open new card
   setTimeout(()=>{
     const sorted=Object.entries(localLahans).sort((a,b)=>(a[1].order??0)-(b[1].order??0));
@@ -1441,6 +1451,10 @@ window.tambahLog=async function(lahanId){
   if(!catatan){showToast('Tulis catatan kegiatan terlebih dahulu.');el('log-cat-'+lahanId)?.focus();return;}
   const logRef=push(ref(db,`users/${uid}/perawatan/${lahanId}`));
   await set(logRef,{tanggal:tgl,jenis,catatan,createdAt:Date.now()});
+  if(!localStorage.getItem('cp_first_log_tracked')){
+    localStorage.setItem('cp_first_log_tracked','1');
+    trackEvent('catatan_kegiatan_pertama',{jenis});
+  }
   if(jenisEl)jenisEl.value='Penyemprotan';
   const cw=el('custom-wrap-'+lahanId);if(cw)cw.style.display='none';
   const ca=el('log-cat-'+lahanId);if(ca)ca.value='';
@@ -1956,6 +1970,7 @@ el('btn-save-cat').addEventListener('click',async()=>{
   }else{
     const newRef=push(ref(db,`users/${uid}/categories`));
     await set(newRef,{name,icon:selectedIcon,seasonCount:0,order:Date.now(),createdAt:Date.now()});
+    trackEvent('kategori_dibuat',{name});
   }
   closeOverlay('ov-cat');showToast('Kategori disimpan.');
 });
@@ -1990,6 +2005,7 @@ el('btn-save-season').addEventListener('click',async()=>{
     const newRef=push(ref(db,`users/${uid}/seasons/${VS.catId}`));
     await set(newRef,{name,order:Date.now(),lahanCount:0,totalLuas:0,totalBerat:0,totalPendapatan:0,createdAt:Date.now()});
     await update(ref(db,`users/${uid}/categories/${VS.catId}`),{seasonCount:cnt+1});
+    trackEvent('musim_dibuat',{name});
   }
   closeOverlay('ov-season');showToast('Musim disimpan.');
 });
@@ -2047,14 +2063,16 @@ window.showOnboarding=function(){
   _onboardStep=0;
   renderOnboardSlide();
   openOverlay('ov-onboard');
+  trackEvent('tutorial_dibuka');
 };
 el('btn-onboard-next').addEventListener('click',()=>{
   if(_onboardStep<ONBOARD_SLIDES.length-1){_onboardStep++;renderOnboardSlide();}
-  else{closeOverlay('ov-onboard');localStorage.setItem('cp_onboarded_v1','1');}
+  else{closeOverlay('ov-onboard');localStorage.setItem('cp_onboarded_v1','1');trackEvent('tutorial_selesai');}
 });
 el('btn-onboard-skip').addEventListener('click',()=>{
   closeOverlay('ov-onboard');
   localStorage.setItem('cp_onboarded_v1','1');
+  trackEvent('tutorial_dilewati',{step:_onboardStep});
 });
 document.querySelectorAll('.overlay').forEach(ov=>{
   ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('active');});
@@ -2069,4 +2087,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-          </html>
+  </html>

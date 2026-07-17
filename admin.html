@@ -444,7 +444,46 @@ function renderFunnel(){
   c.appendChild(wrap);
   if(!totalUsers){
     c.innerHTML+='<div class="empty"><div class="em">📭</div><p>Belum ada data event. Funnel akan terisi begitu pengguna mulai memakai aplikasi versi terbaru.</p></div>';
+    return;
   }
+  // Detail per-pengguna
+  const detWrap=document.createElement('div');
+  detWrap.style.marginTop='14px';
+  detWrap.innerHTML=`<div class="sec-hd"><span class="sec-title">👤 Progres per Pengguna</span></div>`;
+  const userRows=Object.entries(allData).map(([uid,ud])=>{
+    if(!ud)return null;
+    const p=ud.profile||{};
+    const events=ud.events||{};
+    const namesSeen=new Set();
+    let lastTs=0;
+    Object.values(events).forEach(e=>{if(e&&e.name){namesSeen.add(e.name);if(e.ts>lastTs)lastTs=e.ts;}});
+    // langkah terakhir yang tercapai (urut sesuai FUNNEL_STEPS)
+    let lastStepIdx=-1;
+    FUNNEL_STEPS.forEach((s,i)=>{if(namesSeen.has(s.key))lastStepIdx=i;});
+    return{uid,p,namesSeen,lastTs,lastStepIdx};
+  }).filter(Boolean).sort((a,b)=>b.lastStepIdx-a.lastStepIdx||b.lastTs-a.lastTs);
+
+  const rowsHtml=userRows.map(u=>{
+    const initials=(u.p.name||'?').charAt(0).toUpperCase();
+    const stepBadges=FUNNEL_STEPS.map((s,i)=>{
+      const reached=u.namesSeen.has(s.key);
+      return`<span title="${esc(s.label)}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;font-size:11px;font-weight:700;background:${reached?'rgba(52,211,153,.18)':'rgba(255,255,255,.05)'};color:${reached?'#34D399':'var(--t3)'};border:1px solid ${reached?'rgba(52,211,153,.35)':'var(--border)'};">${reached?'✓':i+1}</span>`;
+    }).join('');
+    const statusLabel=u.lastStepIdx===-1?'Belum ada aktivitas tercatat':`Terakhir sampai: ${FUNNEL_STEPS[u.lastStepIdx].label}`;
+    return`<div class="user-card glass" style="border-radius:var(--r);margin-bottom:8px;">
+      <div class="user-head" style="cursor:default;">
+        ${u.p.photoURL?`<img class="user-av" src="${esc(u.p.photoURL)}" alt="">`:`<div class="user-av">${initials}</div>`}
+        <div class="user-info">
+          <div class="user-name">${esc(u.p.name||'Pengguna')}</div>
+          <div class="user-email">${esc(u.p.email||u.uid)}</div>
+          <div style="font-size:11px;color:${u.lastStepIdx===-1?'var(--t3)':'#34D399'};margin-top:2px;font-weight:600;">${statusLabel}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;padding:0 14px 13px;flex-wrap:wrap;">${stepBadges}</div>
+    </div>`;
+  }).join('');
+  detWrap.innerHTML+=rowsHtml||'<div class="empty"><div class="em">📭</div><p>Belum ada pengguna dengan data event.</p></div>';
+  c.appendChild(detWrap);
 }
 
 // ── Overview ──────────────────────────────
@@ -797,4 +836,4 @@ document.addEventListener('DOMContentLoaded',()=>{});
 .bg-g{background:linear-gradient(90deg,#30D158,#059669);}
 </style>
 </body>
-</html>
+            </html>

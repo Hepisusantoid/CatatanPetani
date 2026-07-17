@@ -57,6 +57,15 @@ header.glass::before{display:none;}
 .hdr-title-lg{font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.1;}
 .hdr-sub{font-size:12px;color:var(--text-2);margin-top:2px;font-weight:400;}
 .hdr-home-row{display:flex;align-items:center;justify-content:space-between;}
+.hdr-actions{display:flex;align-items:center;gap:8px;}
+.onboard-dots{display:flex;justify-content:center;gap:6px;margin:4px 0 18px;}
+.onboard-dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .2s,width .2s;}
+.onboard-dots span.active{background:var(--green);width:18px;border-radius:4px;}
+.onboard-emoji{font-size:52px;text-align:center;margin:6px 0 18px;}
+.onboard-title{font-size:20px;font-weight:800;text-align:center;color:var(--text-1);margin-bottom:10px;}
+.onboard-desc{font-size:14.5px;line-height:1.6;color:var(--text-2);text-align:center;padding:0 8px;margin-bottom:6px;}
+.onboard-nav{display:flex;gap:10px;margin-top:22px;}
+.onboard-nav .btn-cancel{flex:0 0 auto;padding-left:18px;padding-right:18px;}
 .brand-home{display:flex;align-items:center;gap:10px;}
 .brand-title{font-size:26px;font-weight:800;letter-spacing:-.6px;}
 .avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.35);cursor:pointer;background:rgba(255,255,255,.12);flex-shrink:0;}
@@ -326,6 +335,7 @@ header.glass::before{display:none;}
 .tmpl-notice{display:flex;align-items:flex-start;gap:7px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:9px 11px;margin-bottom:14px;font-size:11px;color:rgba(255,255,255,.5);line-height:1.5;}
 .tmpl-notice svg{flex-shrink:0;color:var(--gold);margin-top:1px;}
 .tmpl-sep{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;}
+.tmpl-reset-btn{width:100%;background:rgba(255,255,255,.06);border:1px dashed var(--border-glass);color:var(--text-2);font-size:13px;font-weight:600;padding:11px;border-radius:12px;cursor:pointer;margin:2px 0 16px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .tmpl-sep::before,.tmpl-sep::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1);}
 .tmpl-check{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(48,209,88,.5);background:rgba(48,209,88,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--green);}
 .app-footer{margin-top:6px;border-radius:var(--r-md);padding:16px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);text-align:center;}
@@ -442,10 +452,15 @@ header.glass::before{display:none;}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           Saran kegiatan otomatis di menu Jadwal hanya tersedia untuk tanaman di daftar ini. Tanaman di luar daftar tetap bisa dicatat, tapi tanpa saran otomatis.
         </div>
-        <div class="tmpl-sep">atau ketik nama lain</div>
+        <div id="cat-manual-section">
+          <div class="tmpl-sep">atau ketik nama lain</div>
+        </div>
+        <div id="cat-tmpl-chosen" style="display:none;">
+          <button type="button" class="tmpl-reset-btn" id="btn-reset-tmpl">✕ Ganti pilihan tanaman</button>
+        </div>
       </div>
 
-      <div class="sheet-field">
+      <div class="sheet-field" id="cat-name-field">
         <label id="cat-name-label">Nama kategori lainnya</label>
         <input type="text" id="cat-name" placeholder="Contoh: Ubi Jalar, Terong, Semangka...">
       </div>
@@ -552,6 +567,18 @@ header.glass::before{display:none;}
 
   <div id="toast"></div>
   <div id="conn-status"><span class="dot"></span><span id="conn-status-text">Terputus dari internet — perubahan disimpan otomatis saat online kembali</span></div>
+
+  <!-- Onboarding tutorial -->
+  <div class="overlay" id="ov-onboard">
+    <div class="sheet" id="onboard-sheet">
+      <div class="onboard-dots" id="onboard-dots"></div>
+      <div id="onboard-body"></div>
+      <div class="onboard-nav">
+        <button class="btn-cancel" id="btn-onboard-skip">Lewati</button>
+        <button class="btn-primary" id="btn-onboard-next" style="flex:1;">Lanjut</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -629,6 +656,7 @@ let allUnsubs=[];          // all firebase listeners
 let viewUnsubs=[];         // view-specific listeners
 let VS={view:'home',catId:null,catName:'',catIcon:'',seasonId:null,seasonName:''};
 let localCats={};
+let _onboardAutoChecked=false;
 let localSeasons={};       // {seasonId: season}
 let localLahans={};        // {lahanId: lahan}
 let localPerawatan={};     // {lahanId: {logId: log}}
@@ -777,7 +805,10 @@ function renderHeader(){
           <div class="hdr-sub">Manajemen Tani Digital</div>
         </div>
       </div>
-      <img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">
+      <div class="hdr-actions">
+        <button class="btn-icon" id="btn-help" onclick="showOnboarding()" style="width:36px;height:36px;">❓</button>
+        <img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">
+      </div>
     </div>`;
   } else if(onJadwal){
     h.innerHTML=`<div class="hdr-home-row">
@@ -848,6 +879,12 @@ function renderHome(container){
   const unsub1=onValue(ref(db,`users/${uid}/categories`),snap=>{
     localCats=snap.val()||{};
     renderCatList();
+    if(!_onboardAutoChecked){
+      _onboardAutoChecked=true;
+      if(!localStorage.getItem('cp_onboarded_v1')&&Object.keys(localCats).length===0){
+        setTimeout(showOnboarding,400);
+      }
+    }
   });
   allUnsubs.push(unsub1);
   // Listener seasons — hitung jumlah musim per kategori secara real-time
@@ -1855,6 +1892,9 @@ function openCatModal(catId){
   if(nameLbl)nameLbl.textContent=catId?'Nama kategori':'Nama kategori lainnya';
   if(!catId)el('cat-name').placeholder='Contoh: Ubi Jalar, Terong, Semangka...';
   else el('cat-name').placeholder='';
+  el('cat-manual-section').style.display='block';
+  el('cat-tmpl-chosen').style.display='none';
+  el('cat-name-field').style.display='block';
   renderTemplateGrid();
   renderIconGrid();
   openOverlay('ov-cat');
@@ -1879,9 +1919,22 @@ window.selectTemplate=function(idx){
   const t=CROP_TEMPLATES[idx];
   el('cat-name').value=''; // clear input bebas jika template dipilih
   selectedIcon=t.icon;
+  // Template dipilih -> sembunyikan input manual supaya tidak membingungkan
+  el('cat-manual-section').style.display='none';
+  el('cat-name-field').style.display='none';
+  el('cat-tmpl-chosen').style.display='block';
   renderTemplateGrid();
   renderIconGrid();
 };
+window.resetTemplate=function(){
+  _selectedTemplate=null;
+  el('cat-manual-section').style.display='block';
+  el('cat-name-field').style.display='block';
+  el('cat-tmpl-chosen').style.display='none';
+  renderTemplateGrid();
+  setTimeout(()=>el('cat-name').focus(),50);
+};
+el('btn-reset-tmpl').addEventListener('click',resetTemplate);
 
 function renderIconGrid(){
   el('icon-grid').innerHTML=ICONS.map(ic=>`<div class="icon-opt${ic===selectedIcon?' sel':''}" onclick="selectIcon('${ic}')">${ic}</div>`).join('');
@@ -1973,6 +2026,36 @@ el('btn-confirm-cancel').addEventListener('click',()=>{closeOverlay('ov-confirm'
 // ── OVERLAY UTILS ─────────────────────────────────────
 function openOverlay(id){el(id).classList.add('active');}
 function closeOverlay(id){el(id).classList.remove('active');}
+
+// ── ONBOARDING TUTORIAL ──────────────────────────────
+const ONBOARD_SLIDES=[
+  {emoji:'👋',title:'Selamat Datang di Catatan Petani',desc:'Aplikasi gratis untuk mencatat kegiatan dan hasil sawah/kebunmu, dari HP, kapan saja. Yuk kenalan singkat dengan alurnya — cuma 4 langkah.'},
+  {emoji:'🌾',title:'1. Buat Kategori Tanaman',desc:'Mulai dengan menambahkan tanaman yang kamu tanam — misalnya Padi, Jagung, atau Cabai. Ketuk tombol + di beranda untuk membuatnya.'},
+  {emoji:'📅',title:'2. Buat Musim Tanam',desc:'Di dalam setiap tanaman, buat "Musim Tanam" — misalnya Rendeng 2026. Satu musim mewakili satu periode tanam sampai panen.'},
+  {emoji:'🌱',title:'3. Tambah Lahan',desc:'Di dalam musim, tambahkan lahan/petak sawahmu. Isi luas, biaya, dan nanti hasil panennya — semua tersimpan otomatis begitu kamu ketik.'},
+  {emoji:'📝',title:'4. Catat Kegiatan Harian',desc:'Buka lahan, lalu catat kegiatan sehari-hari — pemupukan, penyemprotan, dsb. Menu Jadwal juga akan memberi saran kegiatan otomatis untuk tanaman umum.'}
+];
+let _onboardStep=0;
+function renderOnboardSlide(){
+  const s=ONBOARD_SLIDES[_onboardStep];
+  el('onboard-body').innerHTML=`<div class="onboard-emoji">${s.emoji}</div><div class="onboard-title">${s.title}</div><div class="onboard-desc">${s.desc}</div>`;
+  el('onboard-dots').innerHTML=ONBOARD_SLIDES.map((_,i)=>`<span class="${i===_onboardStep?'active':''}"></span>`).join('');
+  el('btn-onboard-next').textContent=_onboardStep===ONBOARD_SLIDES.length-1?'Mulai Sekarang':'Lanjut';
+  el('btn-onboard-skip').style.display=_onboardStep===ONBOARD_SLIDES.length-1?'none':'block';
+}
+window.showOnboarding=function(){
+  _onboardStep=0;
+  renderOnboardSlide();
+  openOverlay('ov-onboard');
+};
+el('btn-onboard-next').addEventListener('click',()=>{
+  if(_onboardStep<ONBOARD_SLIDES.length-1){_onboardStep++;renderOnboardSlide();}
+  else{closeOverlay('ov-onboard');localStorage.setItem('cp_onboarded_v1','1');}
+});
+el('btn-onboard-skip').addEventListener('click',()=>{
+  closeOverlay('ov-onboard');
+  localStorage.setItem('cp_onboarded_v1','1');
+});
 document.querySelectorAll('.overlay').forEach(ov=>{
   ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('active');});
 });
@@ -1986,4 +2069,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-      </html>
+          </html>

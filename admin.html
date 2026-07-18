@@ -353,24 +353,30 @@ function computeStats(){
     });
 
     // seasons
-    const seasons=ud.seasons||{};
-    Object.values(seasons).forEach(catSeasons=>{
-      totalSeasons+=Object.keys(catSeasons).length;
+    const seasonsByCat=ud.seasons||{};
+    Object.entries(seasonsByCat).forEach(([catId,catSeasons])=>{
+      totalSeasons+=Object.keys(catSeasons||{}).length;
+    });
+    // peta seasonId -> {catName, catIcon} agar lahan bisa dicocokkan ke kategori yang BENAR
+    const seasonToCat={};
+    Object.entries(seasonsByCat).forEach(([catId,catSeasons])=>{
+      const c=cats[catId]||{};
+      Object.keys(catSeasons||{}).forEach(seasonId=>{
+        seasonToCat[seasonId]={catName:c.name||'(Tanpa Kategori)',catIcon:c.icon||'📦'};
+      });
     });
 
     // lahans
     const lahans=ud.lahans||{};
-    Object.values(lahans).forEach(seasonLahans=>{
+    Object.entries(lahans).forEach(([seasonId,seasonLahans])=>{
       Object.entries(seasonLahans).forEach(([lid,l])=>{
         totalLahans++;
         totalPendapatan+=parseFloat(l.pendapatan)||0;
         if(l.panen)totalPanen++;
         if(l.tanam&&!l.panen){
           totalActive++;
-          // find cat name for this lahan
-          let catName='',catIcon='📦';
-          Object.values(cats).forEach(c=>{catName=c.name||'';catIcon=c.icon||'📦';});
-          activeLahans.push({uid,profile,lahanId:lid,lahan:l,catName,catIcon});
+          const match=seasonToCat[seasonId]||{catName:'(Tidak diketahui)',catIcon:'📦'};
+          activeLahans.push({uid,profile,lahanId:lid,lahan:l,catName:match.catName,catIcon:match.catIcon});
         }
       });
     });
@@ -836,4 +842,4 @@ document.addEventListener('DOMContentLoaded',()=>{});
 .bg-g{background:linear-gradient(90deg,#30D158,#059669);}
 </style>
 </body>
-            </html>
+</html>

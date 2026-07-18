@@ -1976,9 +1976,19 @@ el('btn-save-cat').addEventListener('click',async()=>{
 });
 el('btn-del-cat').addEventListener('click',()=>{
   closeOverlay('ov-cat');
-  confirmDelete('Hapus kategori ini?','Semua musim dan lahan dalam kategori ini akan dihapus permanen.',async()=>{
-    await remove(ref(db,`users/${uid}/categories/${editingCatId}`));
+  confirmDelete('Hapus kategori ini?','Semua musim, lahan, dan catatan perawatan dalam kategori ini akan dihapus permanen.',async()=>{
+    const seasonsSnap=await get(ref(db,`users/${uid}/seasons/${editingCatId}`));
+    const seasons=seasonsSnap.val()||{};
+    for(const sid of Object.keys(seasons)){
+      const lahansSnap=await get(ref(db,`users/${uid}/lahans/${sid}`));
+      const lahans=lahansSnap.val()||{};
+      for(const lid of Object.keys(lahans)){
+        await remove(ref(db,`users/${uid}/perawatan/${lid}`));
+      }
+      await remove(ref(db,`users/${uid}/lahans/${sid}`));
+    }
     await remove(ref(db,`users/${uid}/seasons/${editingCatId}`));
+    await remove(ref(db,`users/${uid}/categories/${editingCatId}`));
     showToast('Kategori dihapus.');
   });
 });
@@ -2087,4 +2097,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-  </html>
+    </html>

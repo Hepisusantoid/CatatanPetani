@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🔄 Migrasi Data ke Catatan Petani</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --green:#1a7a4a;--greenlt:#e6f7ee;--greenborder:#a3d9b8;
+  --blue:#1a5c9a;--bluelt:#e8f0fb;
+  --orange:#c96a00;--orangelt:#fff3e0;
+  --red:#c0392b;--redlt:#fdecea;
+  --purple:#6a1b9a;--purplelt:#f3e5f5;
+  --bg:#f5f7fa;--card:#fff;--border:#e2e8f0;
+  --text:#1a202c;--muted:#718096;
+  --radius:14px;--radius-sm:8px;
+  --shadow:0 2px 12px rgba(0,0,0,0.07);
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);min-height:100vh;color:var(--text);}
+
+/* Header */
+.header{background:linear-gradient(135deg,#1a2e4a,#1a4a7a);padding:32px 20px 28px;text-align:center;}
+.header h1{color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.3px;}
+.header p{color:rgba(255,255,255,0.6);font-size:13px;margin-top:5px;}
+.header-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.8);margin-top:12px;}
+
+/* Container */
+.container{max-width:600px;margin:0 auto;padding:20px 16px 60px;}
+
+/* Steps */
+.step-wrap{display:flex;gap:0;margin-bottom:24px;border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--border);}
+.step-item{flex:1;padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);background:var(--card);border-right:1px solid var(--border);transition:all 0.2s;position:relative;}
+.step-item:last-child{border-right:none;}
+.step-item.active{background:var(--blue);color:#fff;}
+.step-item.done{background:var(--greenlt);color:var(--green);}
+.step-num{display:block;font-size:16px;margin-bottom:2px;}
+
+/* Card */
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow);}
+.card-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.card-desc{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+
+/* Section label */
+.section-label{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:block;}
+.input-group{margin-bottom:12px;}
+.input-group input,.input-group select{width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);background:#fff;outline:none;transition:border-color 0.18s;}
+.input-group input:focus,.input-group select:focus{border-color:var(--blue);}
+.input-group select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23718096' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;}
+
+/* Info box */
+.info-box{display:flex;gap:10px;padding:12px 14px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;margin-bottom:14px;}
+.info-box.blue{background:var(--bluelt);border:1px solid #bee3f8;color:var(--blue);}
+.info-box.orange{background:var(--orangelt);border:1px solid #fbd38d;color:var(--orange);}
+.info-box.green{background:var(--greenlt);border:1px solid var(--greenborder);color:var(--green);}
+.info-box.red{background:var(--redlt);border:1px solid #feb2b2;color:var(--red);}
+.info-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:13px;border-radius:var(--radius-sm);border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:#1a4a8a;}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#166038;}
+.btn-green:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border);}
+.btn-outline:hover{background:var(--bg);}
+.btn-sm{padding:8px 16px;font-size:13px;width:auto;}
+.btn-row{display:flex;gap:10px;margin-top:14px;}
+.btn-row .btn{flex:1;}
+
+/* Google sign in */
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;color:var(--text);}
+.google-btn:hover{background:var(--bg);border-color:#aaa;}
+.google-logo{width:20px;height:20px;}
+
+/* Status chip */
+.status-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;}
+.chip-ok{background:var(--greenlt);color:var(--green);}
+.chip-err{background:var(--redlt);color:var(--red);}
+.chip-loading{background:var(--orangelt);color:var(--orange);}
+
+/* User info */
+.user-info{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--greenlt);border:1px solid var(--greenborder);border-radius:var(--radius-sm);margin-bottom:14px;}
+.user-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.user-avatar-fallback{width:36px;height:36px;border-radius:50%;background:var(--green);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;}
+.user-name{font-size:13px;font-weight:700;color:var(--green);}
+.user-email{font-size:11px;color:var(--green);opacity:0.7;}
+
+/* Preview */
+.preview-wrap{border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:14px;}
+.preview-header{background:var(--bg);padding:10px 14px;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.preview-body{max-height:280px;overflow-y:auto;}
+.preview-season{padding:10px 14px;border-bottom:1px solid var(--border);}
+.preview-season:last-child{border-bottom:none;}
+.preview-season-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.preview-lahan{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:3px 0;}
+.preview-lahan-dot{width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;}
+.preview-lahan-dot.has-log{background:var(--green);}
+.preview-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+.badge-season{background:var(--bluelt);color:var(--blue);}
+.badge-log{background:var(--greenlt);color:var(--green);}
+.badge-lahan{background:#f0f0f0;color:#666;}
+
+/* Progress */
+.progress-wrap{margin:16px 0;}
+.progress-bar-bg{background:var(--border);border-radius:100px;height:10px;overflow:hidden;margin-bottom:8px;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),#34d399);border-radius:100px;transition:width 0.3s ease;width:0%;}
+.progress-text{font-size:12px;color:var(--muted);text-align:center;}
+
+/* Log list */
+.log-list{max-height:300px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--radius-sm);}
+.log-item{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;}
+.log-item:last-child{border-bottom:none;}
+.log-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+.log-msg{flex:1;line-height:1.5;}
+.log-msg.ok{color:var(--green);}
+.log-msg.err{color:var(--red);}
+.log-msg.info{color:var(--muted);}
+.log-msg.warn{color:var(--orange);}
+
+/* Summary */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
+.sum-item{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;}
+.sum-val{font-size:24px;font-weight:800;color:var(--green);}
+.sum-label{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* Divider */
+.divider{height:1px;background:var(--border);margin:16px 0;}
+
+/* Page */
+.page{display:none;}
+.page.active{display:block;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔄 Migrasi Data ke Catatan Petani</h1>
+  <p>Pindahkan musim, lahan & catatan perawatan secara otomatis</p>
+  <div class="header-badge">⚡ Satu kali jalan, semua data berpindah</div>
+</div>
+
+<div class="container">
+
+  <!-- STEP INDICATOR -->
+  <div class="step-wrap">
+    <div class="step-item active" id="step1"><span class="step-num">1</span>Login</div>
+    <div class="step-item" id="step2"><span class="step-num">2</span>Sumber</div>
+    <div class="step-item" id="step3"><span class="step-num">3</span>Preview</div>
+    <div class="step-item" id="step4"><span class="step-num">4</span>Proses</div>
+    <div class="step-item" id="step5"><span class="step-num">5</span>Selesai</div>
+  </div>
+
+  <!-- ══ HALAMAN 1: Login ══ -->
+  <div class="page active" id="page-1">
+    <div class="card">
+      <div class="card-title">🔐 Login ke Catatan Petani</div>
+      <div class="card-desc">Login dengan akun Google yang sama seperti yang kamu pakai di Catatan Petani. Data akan ditulis ke akun ini.</div>
+      <div class="info-box blue">
+        <div class="info-icon">ℹ️</div>
+        <div>Halaman ini butuh koneksi ke Firebase Catatan Petani. Isi dulu Firebase Config di bawah, kemudian login Google.</div>
+      </div>
+      <span class="section-label">Firebase API Key (Catatan Petani)</span>
+      <div class="input-group"><input type="text" id="cp-api-key" placeholder="AIzaSyXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/></div>
+      <span class="section-label">Auth Domain</span>
+      <div class="input-group"><input type="text" id="cp-auth-domain" placeholder="nama-project.firebaseapp.com"/></div>
+      <span class="section-label">Database URL (Catatan Petani)</span>
+      <div class="input-group"><input type="text" id="cp-db-url" placeholder="https://nama-project-default-rtdb.asia-southeast1.firebasedatabase.app"/></div>
+
+      <div id="login-status" style="display:none;margin-bottom:14px;"></div>
+      <button class="google-btn" id="btn-google-login" onclick="doGoogleLogin()">
+        <svg class="google-logo" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+        Login dengan Google
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ HALAMAN 2: Input Sumber ══ -->
+  <div class="page" id="page-2">
+    <div id="user-info-wrap"></div>
+
+    <div class="card">
+      <div class="card-title">🗄️ Sumber 1 — JSONBin (Catatan Padi)</div>
+      <div class="card-desc">Musim tanam dan data lahan (varietas, luas, hasil panen) akan diambil dari sini.</div>
+      <span class="section-label">Master Key</span>
+      <div class="input-group"><input type="text" id="jb-key" placeholder="$2a$10$xxxxxxxxxxxxxxxxxx"/></div>
+      <span class="section-label">Bin ID</span>
+      <div class="input-group"><input type="text" id="jb-bin" placeholder="65f2a1b3xxxxxxxxxx"/></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔥 Sumber 2 — Firebase Perawatan Padi</div>
+      <div class="card-desc">Catatan perawatan harian (semprot, pupuk, dll) akan diambil dari sini lalu digabungkan dengan data lahan.</div>
+      <span class="section-label">Database URL (Perawatan Padi)</span>
+      <div class="input-group"><input type="text" id="fb-rawat-url" placeholder="https://perawatanpadi-default-rtdb.asia-southeast1.firebasedatabase.app"/></div>
+      <div class="info-box orange">
+        <div class="info-icon">⚠️</div>
+        <div>Pastikan Firebase Perawatan Padi masih bisa diakses (Rules: read = true). Catatan perawatan yang tidak punya lahan yang cocok akan dilewati.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏷️ Kategori Tujuan di Catatan Petani</div>
+      <div class="card-desc">Musim padi akan dimasukkan ke dalam kategori ini. Jika kategori belum ada, akan dibuat otomatis.</div>
+      <span class="section-label">Nama Kategori</span>
+      <div class="input-group">
+        <select id="cat-mode">
+          <option value="auto">🔍 Cari kategori "Padi" yang ada, atau buat baru otomatis</option>
+          <option value="manual">✏️ Ketik nama kategori sendiri</option>
+        </select>
+      </div>
+      <div id="cat-manual-wrap" style="display:none;">
+        <div class="input-group"><input type="text" id="cat-name-manual" placeholder="Contoh: Padi, Padi Sawah..."/></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="doPreview()">🔍 Ambil & Preview Data →</button>
+  </div>
+
+  <!-- ══ HALAMAN 3: Preview ══ -->
+  <div class="page" id="page-3">
+    <div class="card">
+      <div class="card-title">📋 Preview Data yang Akan Dimigrasi</div>
+      <div class="card-desc">Periksa data di bawah sebelum memulai migrasi. Pastikan semua sudah benar.</div>
+
+      <div id="preview-summary" class="summary-grid"></div>
+
+      <div class="info-box green" id="preview-cat-info"></div>
+
+      <div class="preview-wrap">
+        <div class="preview-header">
+          <span>Data Musim & Lahan</span>
+          <span id="preview-season-count" class="status-chip chip-ok"></span>
+        </div>
+        <div class="preview-body" id="preview-body"></div>
+      </div>
+
+      <div id="preview-warning" style="display:none;"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goPage(2)">← Kembali</button>
+        <button class="btn btn-green" onclick="doMigrate()">🚀 Mulai Migrasi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HALAMAN 4: Proses ══ -->
+  <div class="page" id="page-4">
+    <div class="card">
+      <div class="card-title">⚙️ Sedang Migrasi...</div>
+      <div class="card-desc" id="migrate-stage">Mempersiapkan data...</div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+        <div class="progress-text" id="progress-text">0 / 0</div>
+      </div>
+
+      <div class="log-list" id="migrate-log"></div>
+    </div>
+  </div>
+
+  <!-- ══ HALAMAN 5: Selesai ══ -->
+  <div class="page" id="page-5">
+    <div class="card">
+      <div class="card-title">✅ Migrasi Selesai!</div>
+      <div class="card-desc">Data berhasil dipindahkan ke Catatan Petani. Buka app untuk memverifikasi.</div>
+
+      <div id="result-summary" class="summary-grid" style="margin-top:12px;"></div>
+
+      <div id="result-errors" style="display:none;margin-bottom:14px;"></div>
+
+      <div class="info-box green">
+        <div class="info-icon">✅</div>
+        <div>Data sudah tersedia di Catatan Petani. Buka app dan cek di kategori yang sudah ditentukan. <strong>Halaman migrasi ini bisa ditutup.</strong></div>
+      </div>
+
+      <div class="info-box orange">
+        <div class="info-icon">⚠️</div>
+        <div>Jangan jalankan migrasi dua kali — data bisa terduplikasi di Catatan Petani.</div>
+      </div>
+
+      <button class="btn btn-outline" onclick="window.open('https://tani-steel.vercel.app','_blank')">🌱 Buka Catatan Petani</button>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<script type="module">
+// ══════════════════════════════════════════════
+//  FIREBASE IMPORT
+// ══════════════════════════════════════════════
+import { initializeApp }         from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getDatabase, ref, get, push, set, update, query, orderByChild } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let cpApp=null, cpAuth=null, cpDb=null, cpUser=null;
+let jbSeasons=[];       // data dari JSONBin
+let fbRawat={};         // data dari Firebase Perawatan Padi
+let migrasiData=[];     // data gabungan siap migrasi
+let targetCatId=null;   // catId di Catatan Petani
+let targetCatName='';
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+let currentPage=1;
+function goPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  document.querySelectorAll('.step-item').forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if(i+1<n) s.classList.add('done');
+    if(i+1===n) s.classList.add('active');
+  });
+  currentPage=n;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+window.goPage=goPage;
+
+// ══════════════════════════════════════════════
+//  CAT MODE TOGGLE
+// ══════════════════════════════════════════════
+document.getElementById('cat-mode').addEventListener('change',function(){
+  document.getElementById('cat-manual-wrap').style.display=this.value==='manual'?'block':'none';
+});
+
+// ══════════════════════════════════════════════
+//  STEP 1 — GOOGLE LOGIN
+// ══════════════════════════════════════════════
+window.doGoogleLogin=async function(){
+  const apiKey=v('cp-api-key');
+  const authDomain=v('cp-auth-domain');
+  const dbUrl=v('cp-db-url');
+  if(!apiKey||!authDomain||!dbUrl){ showLoginStatus('⚠ Isi semua kolom Firebase Catatan Petani dulu!','err'); return; }
+
+  showLoginStatus('⏳ Menghubungkan ke Firebase...','loading');
+  try{
+    cpApp=initializeApp({apiKey,authDomain,databaseURL:dbUrl,projectId:authDomain.split('.')[0]},'catatan-petani');
+    cpAuth=getAuth(cpApp);
+    cpDb=getDatabase(cpApp);
+  }catch(e){
+    showLoginStatus('⚠ Gagal inisialisasi Firebase: '+e.message,'err');return;
+  }
+
+  showLoginStatus('⏳ Membuka popup login Google...','loading');
+  try{
+    const provider=new GoogleAuthProvider();
+    const result=await signInWithPopup(cpAuth,provider);
+    cpUser=result.user;
+    showLoginStatus('','');
+    goPage(2);
+    renderUserInfo();
+  }catch(e){
+    if(e.code==='auth/popup-closed-by-user') showLoginStatus('⚠ Popup ditutup. Coba lagi.','err');
+    else showLoginStatus('⚠ Login gagal: '+e.message,'err');
+  }
+};
+
+function showLoginStatus(msg,type){
+  const el=document.getElementById('login-status');
+  if(!msg){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML=`<div class="info-box ${type==='err'?'red':type==='loading'?'orange':'green'}">
+    <div class="info-icon">${type==='err'?'⚠️':type==='loading'?'⏳':'✅'}</div>
+    <div>${msg}</div>
+  </div>`;
+}
+
+function renderUserInfo(){
+  const wrap=document.getElementById('user-info-wrap');
+  const photoURL=cpUser.photoURL;
+  wrap.innerHTML=`<div class="card" style="margin-bottom:16px;">
+    <div class="user-info">
+      ${photoURL?`<img src="${photoURL}" class="user-avatar" alt="avatar">`:`<div class="user-avatar-fallback">${(cpUser.displayName||'U')[0]}</div>`}
+      <div>
+        <div class="user-name">✅ ${cpUser.displayName||'Pengguna'}</div>
+        <div class="user-email">${cpUser.email}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  STEP 2 → 3: PREVIEW
+// ══════════════════════════════════════════════
+window.doPreview=async function(){
+  const jbKey=v('jb-key');
+  const jbBin=v('jb-bin');
+  const fbUrl=v('fb-rawat-url').replace(/\/$/,'');
+  if(!jbKey||!jbBin){alert('⚠ Isi JSONBin Key & Bin ID!');return;}
+  if(!fbUrl){alert('⚠ Isi Database URL Firebase Perawatan Padi!');return;}
+
+  const btn=document.querySelector('#page-2 .btn-primary');
+  btn.disabled=true; btn.textContent='⏳ Mengambil data...';
+
+  try{
+    // 1. Ambil dari JSONBin
+    const jbRes=await fetch(`https://api.jsonbin.io/v3/b/${jbBin}/latest`,{
+      headers:{'X-Master-Key':jbKey}
+    });
+    if(!jbRes.ok) throw new Error('JSONBin HTTP '+jbRes.status+' — cek Master Key & Bin ID');
+    const jbJson=await jbRes.json();
+    jbSeasons=Array.isArray(jbJson.record?.seasons)?jbJson.record.seasons:[];
+    if(!jbSeasons.length) throw new Error('JSONBin tidak punya data seasons. Pastikan Bin ID benar.');
+
+    // 2. Ambil dari Firebase Perawatan Padi
+    const fbRes=await fetch(`${fbUrl}/perawatan.json`);
+    if(!fbRes.ok) throw new Error('Firebase Perawatan Padi HTTP '+fbRes.status+' — cek Database URL & Rules');
+    const fbData=await fbRes.json();
+    fbRawat=fbData&&typeof fbData==='object'?fbData:{};
+
+    // 3. Tentukan kategori tujuan
+    const catMode=document.getElementById('cat-mode').value;
+    const catNameManual=v('cat-name-manual');
+    const desiredCatName=catMode==='manual'&&catNameManual?catNameManual:'Padi';
+
+    // Cari kategori di Catatan Petani
+    const catSnap=await get(ref(cpDb,`users/${cpUser.uid}/categories`));
+    let foundCatId=null;
+    if(catSnap.exists()){
+      Object.entries(catSnap.val()).forEach(([k,c])=>{
+        if(!foundCatId&&(c.name||'').toLowerCase()===desiredCatName.toLowerCase()) foundCatId=k;
+      });
+    }
+    targetCatId=foundCatId;
+    targetCatName=desiredCatName;
+
+    // 4. Bangun migrasiData
+    migrasiData=jbSeasons.map(s=>{
+      const lahans=(s.lahans||[]).map(l=>{
+        // Cari log perawatan yang cocok berdasarkan ID lahan
+        const rawLogs=fbRawat[l.id];
+        const logs=rawLogs&&typeof rawLogs==='object'?Object.values(rawLogs):[];
+        return {...l, _logs:logs};
+      });
+      return {...s, _lahans:lahans};
+    });
+
+    renderPreview(foundCatId, desiredCatName);
+    goPage(3);
+  }catch(e){
+    alert('⚠ Gagal mengambil data:\n'+e.message);
+  }finally{
+    btn.disabled=false; btn.textContent='🔍 Ambil & Preview Data →';
+  }
+};
+
+function renderPreview(foundCatId, catName){
+  const totalSeasons=migrasiData.length;
+  const totalLahans=migrasiData.reduce((a,s)=>a+s._lahans.length,0);
+  const totalLogs=migrasiData.reduce((a,s)=>a+s._lahans.reduce((b,l)=>b+l._logs.length,0),0);
+
+  document.getElementById('preview-summary').innerHTML=`
+    <div class="sum-item"><div class="sum-val">${totalSeasons}</div><div class="sum-label">Musim</div></div>
+    <div class="sum-item"><div class="sum-val">${totalLahans}</div><div class="sum-label">Lahan</div></div>
+    <div class="sum-item"><div class="sum-val">${totalLogs}</div><div class="sum-label">Catatan</div></div>`;
+
+  document.getElementById('preview-cat-info').innerHTML=`<div class="info-icon">${foundCatId?'✅':'🆕'}</div>
+    <div>${foundCatId
+      ?`Kategori "<strong>${catName}</strong>" ditemukan di Catatan Petani. Musim akan ditambahkan ke sini.`
+      :`Kategori "<strong>${catName}</strong>" belum ada. Akan dibuat otomatis saat migrasi.`
+    }</div>`;
+
+  document.getElementById('preview-season-count').textContent=totalSeasons+' musim';
+
+  const body=document.getElementById('preview-body');
+  body.innerHTML=migrasiData.map(s=>{
+    const lahans=s._lahans.map(l=>`
+      <div class="preview-lahan">
+        <div class="preview-lahan-dot ${l._logs.length?'has-log':''}"></div>
+        <span>${l.name||'(tanpa nama)'}</span>
+        ${l.luas?`<span class="preview-badge badge-lahan">📐 ${l.luas} ha</span>`:''}
+        ${l._logs.length?`<span class="preview-badge badge-log">📝 ${l._logs.length} catatan</span>`:''}
+      </div>`).join('');
+    return `<div class="preview-season">
+      <div class="preview-season-name">🌾 ${s.name} <span class="preview-badge badge-season">${s._lahans.length} lahan</span></div>
+      ${lahans}
+    </div>`;
+  }).join('');
+
+  document.getElementById('preview-season-count').textContent=totalSeasons+' musim';
+}
+
+// ══════════════════════════════════════════════
+//  STEP 3 → 4: MIGRASI
+// ══════════════════════════════════════════════
+window.doMigrate=async function(){
+  goPage(4);
+  const logEl=document.getElementById('migrate-log');
+  const fillEl=document.getElementById('progress-fill');
+  const txtEl=document.getElementById('progress-text');
+  let done=0, errCount=0, errList=[];
+
+  // Hitung total operasi
+  const totalLahans=migrasiData.reduce((a,s)=>a+s._lahans.length,0);
+  const totalOps=migrasiData.length+totalLahans; // per musim + per lahan
+  function setProgress(msg,type='info'){
+    done++;
+    fillEl.style.width=Math.round((done/totalOps)*100)+'%';
+    txtEl.textContent=done+' / '+totalOps;
+    addLog(logEl,msg,type);
+  }
+  function addLog(el,msg,type='info'){
+    const item=document.createElement('div');
+    item.className='log-item';
+    item.innerHTML=`<div class="log-icon">${type==='ok'?'✅':type==='err'?'❌':type==='warn'?'⚠️':'📋'}</div>
+      <div class="log-msg ${type}">${msg}</div>`;
+    el.appendChild(item);
+    el.scrollTop=el.scrollHeight;
+  }
+
+  try{
+    // STEP A — Pastikan kategori ada
+    setStage('Langkah 1/4 — Menyiapkan kategori...');
+    let catId=targetCatId;
+    if(!catId){
+      addLog(logEl,`Membuat kategori baru: "${targetCatName}"...`,'info');
+      const newCatRef=push(ref(cpDb,`users/${cpUser.uid}/categories`));
+      await set(newCatRef,{name:targetCatName,icon:'🌾',seasonCount:0,createdAt:Date.now()});
+      catId=newCatRef.key;
+      addLog(logEl,`✅ Kategori "${targetCatName}" dibuat (ID: ${catId})`,'ok');
+    }else{
+      addLog(logEl,`✅ Menggunakan kategori "${targetCatName}" yang sudah ada`,'ok');
+    }
+
+    // STEP B — Migrasi musim per musim
+    setStage('Langkah 2/4 — Migrasi musim & lahan...');
+    let totalLogsMigrated=0;
+
+    for(const season of migrasiData){
+      try{
+        // Buat musim baru di Catatan Petani
+        const seasonRef=push(ref(cpDb,`users/${cpUser.uid}/seasons/${catId}`));
+        const seasonId=seasonRef.key;
+        await set(seasonRef,{
+          name:season.name,
+          order:Date.now(),
+          createdAt:Date.now(),
+          lahanCount:season._lahans.length,
+          _migratedFrom:'catatan-padi'
+        });
+        // Update seasonCount di kategori
+        const catSnap=await get(ref(cpDb,`users/${cpUser.uid}/categories/${catId}`));
+        const cnt=(catSnap.val()?.seasonCount||0)+1;
+        await update(ref(cpDb,`users/${cpUser.uid}/categories/${catId}`),{seasonCount:cnt});
+        setProgress(`Musim "${season.name}" dibuat`,'ok');
+
+        // STEP C — Migrasi lahan di musim ini
+        for(const lahan of season._lahans){
+          try{
+            const lahanRef=push(ref(cpDb,`users/${cpUser.uid}/lahans/${seasonId}`));
+            const newLahanId=lahanRef.key;
+
+            // Data lahan
+            const metodeList=Array.isArray(lahan.metodeList)?lahan.metodeList:(lahan.metode?[lahan.metode]:['Tabur']);
+            await set(lahanRef,{
+              name:lahan.name||'',
+              luas:lahan.luas||'',
+              varietas:lahan.varietas||'',
+              metode:lahan.metode||'Tabur',
+              metodeList,
+              tanam:lahan.tanam||'',
+              panen:lahan.panen||'',
+              karung:lahan.karung||'',
+              berat:lahan.berat||'',
+              harga:lahan.harga||'',
+              pendapatan:lahan.pendapatan||'',
+              ojek:lahan.ojek||'',
+              pengepul:lahan.pengepul||'',
+              catatan:lahan.catatan||'',
+              order:Date.now(),
+              createdAt:Date.now(),
+              _migratedFrom:'catatan-padi',
+              _originalId:lahan.id||''
+            });
+
+            // STEP D — Migrasi log perawatan lahan ini
+            if(lahan._logs&&lahan._logs.length){
+              for(const log of lahan._logs){
+                try{
+                  const logRef=push(ref(cpDb,`users/${cpUser.uid}/perawatan/${newLahanId}`));
+                  await set(logRef,{
+                    tanggal:log.tanggal||'',
+                    jenis:log.jenis||'',
+                    catatan:log.catatan||'',
+                    createdAt:log.createdAt||Date.now(),
+                    _migratedFrom:'perawatan-padi'
+                  });
+                  totalLogsMigrated++;
+                }catch(le){
+                  errCount++;
+                  errList.push(`Log ${lahan.name}: ${le.message}`);
+                }
+              }
+              setProgress(`Lahan "${lahan.name||'(tanpa nama)'}" + ${lahan._logs.length} catatan`,'ok');
+            }else{
+              setProgress(`Lahan "${lahan.name||'(tanpa nama)'}"${lahan._logs.length===0?' (0 catatan)':''}`,'ok');
+            }
+          }catch(le){
+            errCount++;
+            errList.push(`Lahan ${lahan.name}: ${le.message}`);
+            setProgress(`Gagal: lahan "${lahan.name||'?'}"  — ${le.message}`,'err');
+          }
+        }
+
+        // Update summary stats musim
+        const lahans=season._lahans;
+        const totalLuas=lahans.reduce((a,l)=>a+(parseFloat(l.luas)||0),0);
+        const totalBerat=lahans.reduce((a,l)=>a+(parseFloat(l.berat)||0),0);
+        const totalPend=lahans.reduce((a,l)=>a+(parseFloat(l.pendapatan)||0),0);
+        await update(ref(cpDb,`users/${cpUser.uid}/seasons/${catId}/${seasonId}`),{totalLuas,totalBerat,totalPendapatan:totalPend});
+
+      }catch(se){
+        errCount++;
+        errList.push(`Musim ${season.name}: ${se.message}`);
+        setProgress(`Gagal musim "${season.name}": ${se.message}`,'err');
+      }
+    }
+
+    setStage('Selesai ✅');
+    addLog(logEl,'────────────────────────────','info');
+    addLog(logEl,`Migrasi selesai! ${totalLogsMigrated} catatan perawatan berhasil dipindahkan.`,'ok');
+
+    // Tampilkan halaman selesai
+    setTimeout(()=>renderDone(errCount,errList),800);
+
+  }catch(e){
+    addLog(logEl,'Fatal error: '+e.message,'err');
+    document.getElementById('migrate-stage').textContent='⚠ Terjadi error fatal: '+e.message;
+  }
+};
+
+function setStage(msg){
+  document.getElementById('migrate-stage').textContent=msg;
+}
+
+function renderDone(errCount,errList){
+  const totalSeasons=migrasiData.length;
+  const totalLahans=migrasiData.reduce((a,s)=>a+s._lahans.length,0);
+  const totalLogs=migrasiData.reduce((a,s)=>a+s._lahans.reduce((b,l)=>b+l._logs.length,0),0);
+
+  document.getElementById('result-summary').innerHTML=`
+    <div class="sum-item"><div class="sum-val">${totalSeasons}</div><div class="sum-label">Musim</div></div>
+    <div class="sum-item"><div class="sum-val">${totalLahans}</div><div class="sum-label">Lahan</div></div>
+    <div class="sum-item"><div class="sum-val">${totalLogs-errCount}</div><div class="sum-label">Catatan</div></div>`;
+
+  if(errCount){
+    const errWrap=document.getElementById('result-errors');
+    errWrap.style.display='block';
+    errWrap.innerHTML=`<div class="info-box red"><div class="info-icon">⚠️</div><div>
+      <strong>${errCount} item gagal dimigrasi:</strong><br>
+      ${errList.slice(0,5).map(e=>`• ${e}`).join('<br>')}
+      ${errList.length>5?`<br>...dan ${errList.length-5} lainnya`:''}
+    </div></div>`;
+  }
+  goPage(5);
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function v(id){ return (document.getElementById(id)?.value||'').trim(); }
+</script>
+</body>
+</html>

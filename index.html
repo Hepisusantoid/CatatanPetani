@@ -89,6 +89,18 @@ header.glass::before{display:none;}
 
 /* Section label */
 .sec-label{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.sec-row-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}
+.btn-compare{display:inline-flex;align-items:center;gap:5px;background:rgba(96,165,250,.14);border:1px solid rgba(96,165,250,.35);color:var(--blue);font-size:12px;font-weight:700;padding:8px 13px;border-radius:20px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-compare:active{background:rgba(96,165,250,.26);}
+.compare-tabs{display:flex;gap:6px;overflow-x:auto;margin:14px 0 18px;padding-bottom:2px;}
+.compare-tab{flex-shrink:0;padding:8px 14px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid var(--border-glass);color:var(--text-2);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.compare-tab.active{background:rgba(52,211,153,.18);border-color:rgba(52,211,153,.5);color:var(--green);}
+.compare-bar-row{margin-bottom:14px;}
+.compare-bar-lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--text-2);margin-bottom:5px;}
+.compare-bar-lbl b{color:var(--text-1);font-weight:700;}
+.compare-bar-track{height:12px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;}
+.compare-bar-fill{height:100%;border-radius:8px;transition:width .4s ease;}
+.compare-best{display:inline-block;font-size:10px;font-weight:700;color:var(--green);background:rgba(52,211,153,.15);padding:1px 7px;border-radius:10px;margin-left:6px;}
 #cat-list,#season-list,#lahan-list{display:flex;flex-direction:column;gap:12px;}
 
 /* FAB */
@@ -506,6 +518,17 @@ header.glass::before{display:none;}
       <div class="sheet-field"><label>Nama metode</label><input type="text" id="metode-input" placeholder="Contoh: metode khas daerahmu..."></div>
       <button class="btn-primary" id="btn-save-metode">Tambah</button>
       <button class="btn-cancel" id="btn-cancel-metode">Batal</button>
+    </div>
+  </div>
+
+  <!-- Modal: Bandingkan Musim -->
+  <div class="overlay" id="ov-compare">
+    <div class="sheet" id="compare-sheet" style="max-height:92vh;">
+      <div class="sheet-handle"></div>
+      <h3 id="compare-title">Bandingkan Musim</h3>
+      <div class="compare-tabs" id="compare-tabs"></div>
+      <div id="compare-body"></div>
+      <button class="btn-cancel" id="btn-close-compare">Tutup</button>
     </div>
   </div>
 
@@ -972,11 +995,13 @@ window.openCategory=function(catId){
 
 // ── SEASONS ──────────────────────────────────────────
 function renderSeasons(container){
-  container.innerHTML=`<div class="sec-label">Daftar Musim</div><div id="season-list"></div>`;
+  container.innerHTML=`<div class="sec-row-hd"><div class="sec-label">Daftar Musim</div><button class="btn-compare" id="btn-compare-season" style="display:none;" onclick="openCompareModal()">📊 Bandingkan Musim</button></div><div id="season-list"></div>`;
   localSeasons={};
   const unsub=onValue(ref(db,`users/${uid}/seasons/${VS.catId}`),snap=>{
     localSeasons=snap.val()||{};
     renderSeasonList();
+    const btn=el('btn-compare-season');
+    if(btn)btn.style.display=Object.keys(localSeasons).length>=2?'inline-flex':'none';
   });
   viewUnsubs.push(unsub);
 }
@@ -2107,6 +2132,52 @@ el('btn-confirm-cancel').addEventListener('click',()=>{closeOverlay('ov-confirm'
 function openOverlay(id){el(id).classList.add('active');}
 function closeOverlay(id){el(id).classList.remove('active');}
 
+// ── BANDINGKAN MUSIM ──────────────────────────────────
+const COMPARE_METRICS=[
+  {key:'totalLuas',label:'Luas Tanam',unit:'ha',color:'#60A5FA',fmt:v=>fmtNum(v)+' ha'},
+  {key:'totalBerat',label:'Hasil Panen',unit:'kg',color:'#FBBF24',fmt:v=>fmtNum(v)+' kg'},
+  {key:'totalPendapatan',label:'Pendapatan',unit:'Rp',color:'#34D399',fmt:v=>fmtRp(v)},
+  {key:'produktivitas',label:'Produktivitas',unit:'kg/ha',color:'#BF5AF2',fmt:v=>fmtNum(v)+' kg/ha'}
+];
+let _compareMetric='totalLuas';
+window.openCompareModal=function(){
+  _compareMetric='totalLuas';
+  el('compare-title').textContent=`Bandingkan Musim · ${esc(VS.catName||'')}`;
+  el('compare-tabs').innerHTML=COMPARE_METRICS.map(m=>`<button type="button" class="compare-tab${m.key===_compareMetric?' active':''}" onclick="setCompareMetric('${m.key}')">${m.label}</button>`).join('');
+  renderCompareBody();
+  openOverlay('ov-compare');
+};
+window.setCompareMetric=function(key){
+  _compareMetric=key;
+  document.querySelectorAll('#compare-tabs .compare-tab').forEach(b=>b.classList.remove('active'));
+  const idx=COMPARE_METRICS.findIndex(m=>m.key===key);
+  const btns=document.querySelectorAll('#compare-tabs .compare-tab');
+  if(btns[idx])btns[idx].classList.add('active');
+  renderCompareBody();
+};
+function renderCompareBody(){
+  const body=el('compare-body');if(!body)return;
+  const metric=COMPARE_METRICS.find(m=>m.key===_compareMetric);
+  const seasons=Object.entries(localSeasons).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+  if(!seasons.length){body.innerHTML='<div class="empty"><div class="emoji">🗓️</div><p>Belum ada musim untuk dibandingkan.</p></div>';return;}
+  const vals=seasons.map(([id,s])=>{
+    const luas=parseFloat(s.totalLuas)||0;
+    const berat=parseFloat(s.totalBerat)||0;
+    const v=metric.key==='produktivitas'?(luas?berat/luas:0):(parseFloat(s[metric.key])||0);
+    return{id,name:s.name,v};
+  });
+  const maxV=Math.max(...vals.map(x=>x.v),0.0001);
+  const bestId=vals.reduce((best,x)=>x.v>best.v?x:best,vals[0]).id;
+  body.innerHTML=vals.map(x=>{
+    const pct=Math.max(2,Math.round(x.v/maxV*100));
+    return`<div class="compare-bar-row">
+      <div class="compare-bar-lbl"><span>${esc(x.name)}${x.id===bestId&&x.v>0?'<span class="compare-best">🏆 Tertinggi</span>':''}</span><b>${metric.fmt(x.v)}</b></div>
+      <div class="compare-bar-track"><div class="compare-bar-fill" style="width:${pct}%;background:${metric.color};"></div></div>
+    </div>`;
+  }).join('');
+}
+el('btn-close-compare').addEventListener('click',()=>closeOverlay('ov-compare'));
+
 // ── ONBOARDING TUTORIAL ──────────────────────────────
 const ONBOARD_SLIDES=[
   {emoji:'👋',title:'Selamat Datang di Catatan Petani',desc:'Aplikasi gratis untuk mencatat kegiatan dan hasil sawah/kebunmu, dari HP, kapan saja. Yuk kenalan singkat dengan alurnya — cuma 4 langkah.'},
@@ -2151,4 +2222,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-        </html>
+  </html>

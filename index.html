@@ -19,6 +19,8 @@
   --r-lg:26px;--r-md:18px;--r-sm:12px;--blur:32px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
+button,[onclick],.ios-row,a,input[type="checkbox"],input[type="radio"],.tab-item,.pill-del,label[for]{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+button{cursor:pointer;}
 html,body{height:100%;}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;background:radial-gradient(ellipse at 22% 0%,rgba(72,20,180,.55),transparent 50%),radial-gradient(ellipse at 80% 85%,rgba(48,209,88,.1),transparent 40%),linear-gradient(170deg,var(--bg-deep) 0%,var(--bg-mid) 50%,var(--bg-bright) 100%);background-attachment:fixed;color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased;}
 input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.42);}
@@ -58,14 +60,16 @@ header.glass::before{display:none;}
 .hdr-sub{font-size:12px;color:var(--text-2);margin-top:2px;font-weight:400;}
 .hdr-home-row{display:flex;align-items:center;justify-content:space-between;}
 .hdr-actions{display:flex;align-items:center;gap:8px;}
-.onboard-dots{display:flex;justify-content:center;gap:6px;margin:4px 0 18px;}
-.onboard-dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .2s,width .2s;}
+.onboard-dots{display:flex;justify-content:center;gap:6px;margin:0 0 20px;}
+.onboard-dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .2s,width .2s;flex-shrink:0;}
 .onboard-dots span.active{background:var(--green);width:18px;border-radius:4px;}
-.onboard-emoji{font-size:52px;text-align:center;margin:6px 0 18px;}
-.onboard-title{font-size:20px;font-weight:800;text-align:center;color:var(--text-1);margin-bottom:10px;}
-.onboard-desc{font-size:14.5px;line-height:1.6;color:var(--text-2);text-align:center;padding:0 8px;margin-bottom:6px;}
-.onboard-nav{display:flex;gap:10px;margin-top:22px;}
-.onboard-nav .btn-cancel{flex:0 0 auto;padding-left:18px;padding-right:18px;}
+.onboard-emoji{font-size:48px;text-align:center;margin:4px 0 20px;line-height:1;}
+.onboard-title{font-size:19px;font-weight:800;text-align:center;color:var(--text-1);margin-bottom:10px;padding:0 4px;}
+.onboard-desc{font-size:14px;line-height:1.65;color:var(--text-2);text-align:center;padding:0 6px;margin-bottom:4px;}
+.onboard-nav{display:flex;align-items:stretch;gap:10px;margin-top:24px;}
+.onboard-nav button{padding:14px;font-size:14.5px;border-radius:var(--r-sm);margin:0;}
+.onboard-nav .btn-cancel{flex:0 0 auto;width:auto;padding-left:20px;padding-right:20px;background:rgba(255,255,255,.06);color:var(--text-2);font-weight:600;}
+.onboard-nav .btn-primary{flex:1;}
 .brand-home{display:flex;align-items:center;gap:10px;}
 .brand-title{font-size:26px;font-weight:800;letter-spacing:-.6px;}
 .avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.35);cursor:pointer;background:rgba(255,255,255,.12);flex-shrink:0;}
@@ -115,7 +119,7 @@ header.glass::before{display:none;}
 /* Season cards */
 .season-card{border-radius:var(--r-md);padding:16px;display:block;cursor:pointer;transition:transform .15s;animation:riseIn .3s ease both;}
 .season-card:active{transform:scale(.985);}
-.btn-icon{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-icon{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:background .1s;}
 .btn-icon:active{background:rgba(255,255,255,.18);}
 .chev{color:var(--text-3);font-size:20px;}
 
@@ -184,9 +188,11 @@ header.glass::before{display:none;}
 .metode-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .metode-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border-glass);background:var(--glass-soft);color:var(--text-2);}
 .metode-pill.active{background:rgba(52,211,153,.2);color:var(--green);border-color:rgba(52,211,153,.4);}
-.pill-del{font-size:12px;opacity:.6;cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:9px;margin:-9px -9px -9px -3px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.pill-del{font-size:12px;opacity:.6;cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:9px;margin:-9px -9px -9px -3px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:opacity .1s;}
+.pill-del:active{opacity:1;}
 .pill-del:hover{opacity:1;}
-.metode-add{width:34px;height:34px;border-radius:50%;background:rgba(52,211,153,.15);border:1.5px dashed rgba(52,211,153,.4);color:var(--green);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.metode-add{width:34px;height:34px;border-radius:50%;background:rgba(52,211,153,.15);border:1.5px dashed rgba(52,211,153,.4);color:var(--green);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:background .1s;}
+.metode-add:active{background:rgba(52,211,153,.3);}
 
 /* Result boxes */
 .result-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
@@ -233,6 +239,7 @@ header.glass::before{display:none;}
 .log-hss{font-size:10px;font-weight:700;background:rgba(251,146,60,.15);color:var(--orange);padding:2px 7px;border-radius:20px;}
 .log-cat{font-size:13px;color:var(--text-2);line-height:1.4;margin-top:3px;}
 .btn-del-log{background:none;border:none;color:rgba(248,113,113,.5);font-size:14px;cursor:pointer;padding:10px;margin:-10px;border-radius:5px;flex-shrink:0;transition:color .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-del-log:active{color:rgba(248,113,113,.9);background:rgba(248,113,113,.12);}
 .btn-del-log:hover{color:var(--danger);}
 
 /* Log table */
@@ -323,6 +330,10 @@ header.glass::before{display:none;}
 .jadwal-empty p{font-size:14px;line-height:1.55;}
 /* Template grid kategori */
 .tmpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.metode-tmpl-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;}
+.metode-tmpl-chip{padding:10px 16px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid var(--border-glass);color:var(--text-2);font-size:13.5px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:background .12s,color .12s,border-color .12s;}
+.metode-tmpl-chip:active{background:rgba(52,211,153,.22);border-color:rgba(52,211,153,.5);color:var(--green);}
+.metode-tmpl-chip.added{opacity:.4;pointer-events:none;}
 .tmpl-btn{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);cursor:pointer;transition:all .15s;}
 .tmpl-btn:active{transform:scale(.97);}
 .tmpl-btn.selected{background:rgba(48,209,88,.18);border-color:rgba(48,209,88,.45);}
@@ -489,7 +500,10 @@ header.glass::before{display:none;}
     <div class="sheet">
       <div class="sheet-handle"></div>
       <h3>Tambah Metode Tanam</h3>
-      <div class="sheet-field"><label>Nama metode</label><input type="text" id="metode-input" placeholder="Contoh: Jarwo, SRI, Tugal, Legowo..."></div>
+      <label class="icon-label" style="margin-bottom:9px;">Pilih metode umum</label>
+      <div class="metode-tmpl-grid" id="metode-tmpl-grid"></div>
+      <div class="tmpl-sep" style="margin-top:14px;">atau ketik metode lain</div>
+      <div class="sheet-field"><label>Nama metode</label><input type="text" id="metode-input" placeholder="Contoh: metode khas daerahmu..."></div>
       <button class="btn-primary" id="btn-save-metode">Tambah</button>
       <button class="btn-cancel" id="btn-cancel-metode">Batal</button>
     </div>
@@ -571,6 +585,7 @@ header.glass::before{display:none;}
   <!-- Onboarding tutorial -->
   <div class="overlay" id="ov-onboard">
     <div class="sheet" id="onboard-sheet">
+      <div class="sheet-handle"></div>
       <div class="onboard-dots" id="onboard-dots"></div>
       <div id="onboard-body"></div>
       <div class="onboard-nav">
@@ -1288,11 +1303,31 @@ function flashSaved(id){
 }
 
 // ── METODE ───────────────────────────────────────────
+const METODE_TEMPLATES=['Tabur','Tanam Pindah','Tugal','Gledek','Jajar Legowo','SRI','Sebar Langsung','Larikan'];
+function renderMetodeTmplGrid(){
+  const grid=el('metode-tmpl-grid');if(!grid)return;
+  const l=localLahans[_metodeLahanId]||{};
+  const existing=Array.isArray(l.metodeList)?l.metodeList:[];
+  grid.innerHTML=METODE_TEMPLATES.map(m=>{
+    const already=existing.includes(m);
+    return`<button type="button" class="metode-tmpl-chip${already?' added':''}" onclick="quickAddMetode('${m.replace(/'/g,"\\'")}')">${already?'✓ ':''}${m}</button>`;
+  }).join('');
+}
+window.quickAddMetode=async function(val){
+  const l=localLahans[_metodeLahanId];if(!l)return;
+  if(!Array.isArray(l.metodeList))l.metodeList=[l.metode||'Tabur'];
+  if(l.metodeList.includes(val)){closeOverlay('ov-metode');return;}
+  l.metodeList.push(val);
+  l.metode=l.metodeList[0];
+  await update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${_metodeLahanId}`),{metodeList:l.metodeList,metode:l.metode});
+  closeOverlay('ov-metode');
+  refreshMetodePills(_metodeLahanId,l.metodeList);
+};
 window.openMetodeModal=function(lahanId){
   _metodeLahanId=lahanId;
   el('metode-input').value='';
+  renderMetodeTmplGrid();
   openOverlay('ov-metode');
-  setTimeout(()=>el('metode-input').focus(),200);
 };
 el('btn-save-metode').addEventListener('click',async()=>{
   const val=el('metode-input').value.trim();if(!val){showToast('Ketik nama metode.');return;}
@@ -2097,4 +2132,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-    </html>
+                                 </html>

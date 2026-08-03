@@ -1097,7 +1097,7 @@ function lahanCardHTML(id,l,idx,n){
     <div class="lahan-head" onclick="toggleLahan('${id}')">
       <span class="lahan-num">${idx+1}</span>
       <div class="lahan-name-wrap">
-        <div class="lahan-title">${esc(l.name||'(tanpa nama)')}${luasBadge}<span class="field-saved-badge" id="saved-${id}">✓ Tersimpan</span></div>
+        <div class="lahan-title"><span id="namet-${id}">${esc(l.name||'(tanpa nama)')}</span><span class="luas-badge" id="luasb-${id}" style="${l.luas?'':'display:none;'}">📐 ${l.luas?fmtNum(l.luas)+' ha':''}</span><span class="field-saved-badge" id="saved-${id}">✓ Tersimpan</span></div>
         <div class="lahan-sub">${esc(l.varietas||'—')} · ${l.tanam?'Tanam '+fmtTgl(l.tanam):'Belum tanam'}</div>
       </div>
       <div class="lahan-badges">
@@ -1109,7 +1109,7 @@ function lahanCardHTML(id,l,idx,n){
     <div class="lahan-body">
       <div class="field-grid">
         <div class="field-group"><label>Nama Lahan</label><input type="text" value="${esc(l.name||'')}" oninput="onLahanInput('${id}','name',this.value)" placeholder="Nama lahan..."/></div>
-        <div class="field-group"><label>Luas (ha)</label><input type="text" inputmode="decimal" value="${l.luas?fmtDot(l.luas):''}" oninput="onLahanDecimalInput('${id}','luas',this)" placeholder="0.5"/></div>
+        <div class="field-group"><label>Luas (ha)</label><input type="text" inputmode="decimal" value="${l.luas?String(l.luas):''}" oninput="onLahanDecimalInput('${id}','luas',this)" placeholder="0.5"/></div>
         <div class="field-group"><label>Varietas</label><input type="text" value="${esc(l.varietas||'')}" oninput="onLahanInput('${id}','varietas',this.value)" placeholder="Contoh: Ciherang, IR64..."/></div>
         <div class="field-group"><label>Metode Tanam</label>
           <div class="metode-wrap" id="metode-${id}">${pills}<button class="metode-add" onclick="openMetodeModal('${id}')">＋</button></div>
@@ -1202,6 +1202,16 @@ function rawNum(s){
   // hilangkan titik ribuan, kembalikan nilai numerik sebagai string
   return String(s||'').replace(/\./g,'').replace(',','.');
 }
+// Khusus field DESIMAL seperti Luas (ha): '.' ATAU ',' dianggap TITIK DESIMAL, bukan pemisah ribuan.
+// Ini beda dari rawNum() di atas yang untuk field Rupiah/karung (bulat, titik = ribuan).
+function rawDecimal(s){
+  let out='',dotUsed=false;
+  for(const ch of String(s||'')){
+    if(ch>='0'&&ch<='9')out+=ch;
+    else if((ch==='.'||ch===',')&&!dotUsed){out+='.';dotUsed=true;}
+  }
+  return out;
+}
 // Format titik ribuan LANGSUNG saat user mengetik (live), dengan posisi kursor tetap wajar.
 // Contoh: ketik 1000 -> otomatis tampil 1.000
 function formatNumberLive(inputEl){
@@ -1225,10 +1235,19 @@ window.onLahanNumInput=function(id,field,inputEl){
   const raw=formatNumberLive(inputEl);
   onLahanInput(id,field,raw||'');
 };
-// Untuk field desimal seperti Luas (ha) - TIDAK diformat titik ribuan karena titik dipakai untuk koma desimal
+// Untuk field desimal seperti Luas (ha) - '.' dan ',' dianggap titik desimal, BUKAN pemisah ribuan
 window.onLahanDecimalInput=function(id,field,inputEl){
-  const raw=rawNum(inputEl.value);
+  const raw=rawDecimal(inputEl.value);
   onLahanInput(id,field,raw||'');
+  if(field==='luas'){
+    const lb=el('luasb-'+id);
+    if(lb){
+      const v=parseFloat(raw)||0;
+      lb.style.display=v?'inline-block':'none';
+      lb.textContent=v?`📐 ${fmtNum(v)} ha`:'';
+    }
+    updateResultBoxesExt(id);
+  }
 };
 window.onPendInput=function(id,inputEl){
   const raw=formatNumberLive(inputEl);
@@ -1270,7 +1289,7 @@ window.onHasil=function(id,field,inputEl){
 function updateResultBoxesExt(id){
   const ll=localLahans[id]||{};
   const berat=parseFloat(rawNum(String(ll.berat||'')))||0;
-  const luas=parseFloat(rawNum(String(ll.luas||'')))||0;
+  const luas=parseFloat(rawDecimal(String(ll.luas||'')))||0;
   const pend=parseFloat(rawNum(String(ll.pendapatan||'')))||0;
   const karungTotal=parseFloat(rawNum(String(ll.karung||'')))||0;
   const bawon=parseFloat(rawNum(String(ll.bawon||'')))||0;
@@ -1287,9 +1306,9 @@ window.onLahanInput=function(id,field,value){
   saveDbc[id+'_'+field]=setTimeout(()=>{
     if(!uid||!VS.seasonId)return;
     trackWrite(update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{[field]:value})).then(()=>flashSaved(id));
-    if(field==='name'||field==='luas'){
-      const lc=document.querySelector(`#lc-${id} .lahan-title`);
-      if(lc&&field==='name')lc.childNodes[0] && (lc.childNodes[0].textContent=value||'(tanpa nama)');
+    if(field==='name'){
+      const nt=el('namet-'+id);
+      if(nt)nt.textContent=value||'(tanpa nama)';
     }
     updateSummary();
   },600);
@@ -2132,4 +2151,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-                                 </html>
+        </html>

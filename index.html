@@ -159,6 +159,26 @@ header.glass::before{display:none;}
 .sum-bar-title{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;font-weight:600;}
 .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .sum-item{background:var(--glass-soft);border-radius:10px;padding:10px 12px;}
+.ai-card{border-radius:var(--r-md);padding:14px;margin-top:10px;}
+.ai-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.ai-hd-title{font-size:13px;font-weight:700;color:var(--text-1);display:flex;align-items:center;gap:6px;}
+.ai-chev{font-size:12px;color:var(--text-3);transition:transform .2s;}
+.ai-chev.open{transform:rotate(180deg);}
+.ai-body{margin-top:14px;display:none;}
+.ai-body.open{display:block;}
+.ai-input-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.ai-input-row label{font-size:12.5px;color:var(--text-2);flex-shrink:0;}
+.ai-input-row input{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border-glass);border-radius:10px;padding:9px 11px;color:var(--text-1);font-size:13.5px;font-family:inherit;}
+.ai-table{width:100%;border-collapse:collapse;margin-bottom:14px;}
+.ai-table th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);text-align:left;padding:0 6px 6px 0;font-weight:700;}
+.ai-table td{font-size:12.5px;color:var(--text-1);padding:7px 6px;border-top:1px solid var(--border-glass);}
+.ai-table td.num{text-align:right;font-weight:600;}
+.ai-compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ai-compare-box{background:var(--glass-soft);border-radius:12px;padding:12px;}
+.ai-compare-box .lbl{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.ai-compare-box .val{font-size:16px;font-weight:800;color:var(--text-1);}
+.ai-compare-box .sub{font-size:10.5px;color:var(--text-3);margin-top:3px;line-height:1.4;}
+.ai-note{font-size:11px;color:var(--text-3);line-height:1.5;margin-top:10px;padding:9px 10px;background:rgba(255,255,255,.04);border-radius:9px;}
 .sum-item .sl{font-size:10px;color:var(--text-3);margin-bottom:3px;}
 .sum-item .sv{font-size:14px;font-weight:700;}
 
@@ -652,6 +672,7 @@ const CROP_TEMPLATES=[
   {name:'Bawang Merah',icon:'🧅',sub:'~65 hari, saran lengkap', key:'bawang merah'},
   {name:'Singkong',  icon:'🍠', sub:'~8 bulan, saran lengkap',  key:'singkong'},
   {name:'Talas',     icon:'🌿', sub:'~6 bulan, saran lengkap',  key:'talas'},
+  {name:'Kacang Hijau',icon:'🫘',sub:'~60 hari, saran lengkap', key:'kacang hijau'},
 ];
 const CROP_ICON_MAP=[
   {keys:['padi','beras','sawah','gabah','rojolele','ciherang','ir64','mekongga'],icon:'🌾'},
@@ -1057,12 +1078,26 @@ function renderSeasonDetail(container){
       <div class="sum-bar-title">Ringkasan Musim</div>
       <div class="sum-grid" id="sum-grid"></div>
     </div>
+    <div class="ai-card glass" id="ai-card">
+      <div class="ai-hd" onclick="toggleAiCard()">
+        <div class="ai-hd-title">🧠 Analisa Pintar · Biaya Semprot</div>
+        <span class="ai-chev" id="ai-chev">▼</span>
+      </div>
+      <div class="ai-body" id="ai-body">
+        <div class="ai-input-row">
+          <label>Biaya semprot / ha</label>
+          <input type="text" inputmode="numeric" id="ai-biaya-input" placeholder="Contoh: 150.000" oninput="onAiBiayaInput(this)">
+        </div>
+        <div id="ai-content"><div style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Memuat data penyemprotan…</div></div>
+      </div>
+    </div>
     <div class="action-row">
       <button class="btn-action primary" onclick="addLahan()">＋ Tambah Lahan</button>
       <button class="btn-action secondary" id="btn-import" style="display:none" onclick="openImportModal()">⬇️ Import Lahan</button>
     </div>
     <div id="lahan-list"></div>`;
   localLahans={};localPerawatan={};
+  el('ai-biaya-input').value=localSeasons[VS.seasonId]?.biayaSemprotPerHa?fmtDot(localSeasons[VS.seasonId].biayaSemprotPerHa):'';
   const unsub=onValue(ref(db,`users/${uid}/lahans/${VS.seasonId}`),snap=>{
     const newData=snap.val()||{};
     const prevIds=new Set(Object.keys(localLahans));
@@ -1070,12 +1105,81 @@ function renderSeasonDetail(container){
     const idsChanged=[...newIds].some(id=>!prevIds.has(id))||[...prevIds].some(id=>!newIds.has(id));
     localLahans=newData;
     updateSummary();
-    if(idsChanged)renderLahanList();
+    if(idsChanged){renderLahanList();computeSprayAnalysis();}
     // update import button
     const btn=el('btn-import');
     if(btn)btn.style.display=Object.keys(localSeasons).length>1?'flex':'none';
   });
   viewUnsubs.push(unsub);
+  computeSprayAnalysis();
+}
+
+// ── ANALISA PINTAR: BIAYA SEMPROT ────────────────────
+let _aiOpen=false;
+window.toggleAiCard=function(){
+  _aiOpen=!_aiOpen;
+  el('ai-body').classList.toggle('open',_aiOpen);
+  el('ai-chev').classList.toggle('open',_aiOpen);
+};
+window.onAiBiayaInput=function(inputEl){
+  const raw=formatNumberLive(inputEl);
+  clearTimeout(saveDbc['_ai_biaya']);
+  saveDbc['_ai_biaya']=setTimeout(()=>{
+    if(!uid||!VS.seasonId)return;
+    trackWrite(update(ref(db,`users/${uid}/seasons/${VS.catId}/${VS.seasonId}`),{biayaSemprotPerHa:raw||''}));
+    if(localSeasons[VS.seasonId])localSeasons[VS.seasonId].biayaSemprotPerHa=raw||'';
+    computeSprayAnalysis();
+  },600);
+};
+async function computeSprayAnalysis(){
+  const box=el('ai-content');if(!box)return;
+  const lahanEntries=Object.entries(localLahans);
+  if(!lahanEntries.length){
+    box.innerHTML='<div style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Belum ada lahan di musim ini.</div>';
+    return;
+  }
+  box.innerHTML='<div style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Menghitung jumlah penyemprotan…</div>';
+  const biayaHa=parseFloat(rawNum(String(localSeasons[VS.seasonId]?.biayaSemprotPerHa||'')))||0;
+  const rows=[];
+  for(const[lid,l]of lahanEntries){
+    let count=0;
+    try{
+      const snap=await get(ref(db,`users/${uid}/perawatan/${lid}`));
+      const logs=snap.val()||{};
+      count=Object.values(logs).filter(g=>g&&g.jenis==='Penyemprotan').length;
+    }catch(e){count=0;}
+    const luas=parseFloat(rawDecimal(String(l.luas||'')))||0;
+    rows.push({name:l.name||'(tanpa nama)',count,luas,biaya:count*luas*biayaHa});
+  }
+  const totalPerLahan=rows.reduce((a,r)=>a+r.biaya,0);
+  const totalCount=rows.reduce((a,r)=>a+r.count,0);
+  const totalLuas=rows.reduce((a,r)=>a+r.luas,0);
+  const totalGabungan=totalCount*totalLuas*biayaHa;
+  if(!biayaHa){
+    box.innerHTML=`<div style="font-size:12px;color:var(--text-3);text-align:center;padding:6px 0 4px;">Isi biaya semprot per hektar di atas untuk melihat perhitungan.</div>
+      <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Semprot</th><th style="text-align:right;">Luas</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.count}×</td><td class="num">${fmtNum(r.luas)} ha</td></tr>`).join('')}
+      </tbody></table>`;
+    return;
+  }
+  box.innerHTML=`
+    <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Semprot</th><th style="text-align:right;">Luas</th><th style="text-align:right;">Biaya</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.count}×</td><td class="num">${fmtNum(r.luas)} ha</td><td class="num">${fmtRp(r.biaya)}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="ai-compare">
+      <div class="ai-compare-box">
+        <div class="lbl">Per Lahan Dijumlah</div>
+        <div class="val">${fmtRp(totalPerLahan)}</div>
+        <div class="sub">Tiap lahan dihitung sendiri (semprot × luas × biaya), baru dijumlah. Lebih akurat kalau jadwal semprot tiap lahan beda.</div>
+      </div>
+      <div class="ai-compare-box">
+        <div class="lbl">Digabung Total Musim</div>
+        <div class="val">${fmtRp(totalGabungan)}</div>
+        <div class="sub">${totalCount}× total semprot × ${fmtNum(totalLuas)} ha total × ${fmtRp(biayaHa)} = perkiraan kasar seolah semua lahan disemprot bersamaan.</div>
+      </div>
+    </div>
+    ${totalGabungan!==totalPerLahan?`<div class="ai-note">⚠️ Selisih ${fmtRp(Math.abs(totalGabungan-totalPerLahan))} antara dua cara hitung ini muncul karena lahan-lahan di musim ini punya jumlah semprot dan/atau luas yang berbeda. Untuk biaya riil, gunakan angka "Per Lahan Dijumlah".</div>`:''}
+  `;
 }
 
 function updateSummary(){
@@ -1643,6 +1747,14 @@ function getFase(hss,catName){
     if(hss<150)return{label:'Pembesaran Umbi',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/max*100),max};
     return{label:'Siap Panen',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/max*100),98),max};
   }
+  if(nm.includes('kacang hijau')||nm.includes('kacang ijo')){
+    const max=65;
+    if(hss<20)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/max*100),max};
+    if(hss<35)return{label:'Menjelang Berbunga',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/max*100),max};
+    if(hss<45)return{label:'Berbunga',cls:'fb-gen',bar:'cp-gen',pct:Math.round(hss/max*100),max};
+    if(hss<55)return{label:'Pembentukan Polong',cls:'fb-bung',bar:'cp-bung',pct:Math.round(hss/max*100),max};
+    return{label:'Panen Bertahap',cls:'fb-pan',bar:'cp-pan',pct:Math.min(Math.round(hss/max*100),98),max};
+  }
   // generik
   const max=90;
   if(hss<max*0.35)return{label:'Vegetatif',cls:'fb-veg',bar:'cp-veg',pct:Math.round(hss/max*100),max};
@@ -1711,6 +1823,15 @@ function generateSaran(item){
     if(hss>=120&&hss<=150)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'💊',title:'Pemupukan KCl Akhir',desc:`Hari ke-${hss} — beri KCl untuk memaksimalkan ukuran dan kualitas umbi talas.`,lahan:lRef,lCls:'sl-o'});
     if(hss>=150)saran.push({cls:'sc-g',su:'su-g',label:'Info',ico:'🌿',title:'Persiapan Panen Talas',desc:`Hari ke-${hss} — panen saat daun mulai menguning. Cabut hati-hati agar umbi tidak luka.`,lahan:lRef,lCls:'sl-g'});
   }
+  else if(nm.includes('kacang hijau')||nm.includes('kacang ijo')){
+    if(hss>=7&&hss<=12)saran.push({cls:'sc-g',su:'su-g',label:'Hari ini',ico:'🌱',title:'Cek Perkecambahan & Sulam',desc:`HST ${hss} — periksa benih yang gagal tumbuh, sulam dengan benih cadangan agar populasi merata.`,lahan:lRef,lCls:'sl-g'});
+    if(hss>=12&&hss<=20)saran.push({cls:'sc-o',su:'su-o',label:'Segera',ico:'🌿',title:'Penyiangan & Pemupukan Dasar',desc:`HST ${hss} — bersihkan gulma, beri NPK rendah N (kacang hijau fiksasi nitrogen sendiri lewat bintil akar).`,lahan:lRef,lCls:'sl-o'});
+    if(hss>=20&&hss<=30)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🔍',title:'Cek Hama Kutu Daun & Ulat',desc:`HST ${hss} — periksa pucuk daun dari kutu daun/ulat grayak sebelum masuk fase berbunga.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=25&&hss<=35)saran.push({cls:'sc-r',su:'su-r',label:'Kritis',ico:'🌸',title:'Fase Berbunga — Jaga Air, Hindari Semprot',desc:`HST ${hss} — pastikan air cukup agar bunga tidak rontok. JANGAN semprot pestisida saat bunga mekar, ganggu penyerbukan.`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=35&&hss<=45)saran.push({cls:'sc-r',su:'su-r',label:'Kritis',ico:'💊',title:'Pemupukan KCl & Waspada Penggerek Polong',desc:`HST ${hss} — fase pembentukan polong. Beri KCl untuk kualitas polong, waspadai hama penggerek polong (Maruca).`,lahan:lRef,lCls:'sl-r'});
+    if(hss>=45&&hss<=55)saran.push({cls:'sc-b',su:'su-b',label:'Info',ico:'🔍',title:'Pantau Kematangan Polong',desc:`HST ${hss} — cek polong yang mulai menghitam/kering, tanda sebagian sudah siap dipetik.`,lahan:lRef,lCls:'sl-b'});
+    if(hss>=55)saran.push({cls:'sc-g',su:'su-g',label:'Segera',ico:'🫘',title:'Panen Bertahap',desc:`HST ${hss} — petik hanya polong yang sudah menghitam/kering. Polong matang tidak serentak, ulangi petik tiap 3-5 hari.`,lahan:lRef,lCls:'sl-g'});
+  }
 
   // Universal: tidak ada catatan >7 hari
   if(daysSinceLast!==null&&daysSinceLast>=7){
@@ -1721,7 +1842,7 @@ function generateSaran(item){
 
 function icoClassFromCat(catName){
   const nm=(catName||'').toLowerCase();
-  if(nm.includes('padi')||nm.includes('talas')||nm.includes('singkong'))return'ci-g';
+  if(nm.includes('padi')||nm.includes('talas')||nm.includes('singkong')||nm.includes('kacang hijau')||nm.includes('kacang ijo'))return'ci-g';
   if(nm.includes('jagung')||nm.includes('cabai')||nm.includes('tomat'))return'ci-o';
   if(nm.includes('ikan')||nm.includes('lele')||nm.includes('kolam'))return'ci-b';
   if(nm.includes('bawang')||nm.includes('sayur'))return'ci-p';

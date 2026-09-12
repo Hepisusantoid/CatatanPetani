@@ -521,6 +521,7 @@ header.glass::before{display:none;}
       <div class="sheet-handle"></div>
       <h3 id="season-modal-title">Musim Tanam Baru</h3>
       <div class="sheet-field"><label>Nama musim</label><input type="text" id="season-name" placeholder="Contoh: Rendeng 2026, Gadu 2026..."></div>
+      <div class="sheet-field"><label>Modal Tanam Musim Ini (Rp) <span style="font-size:9px;color:var(--text-2);font-weight:400;">opsional, untuk hitung untung/rugi</span></label><input type="text" inputmode="numeric" id="season-modal" placeholder="Contoh: 30.000.000" oninput="formatNumberLive(this)"></div>
       <button class="btn-primary" id="btn-save-season">Simpan</button>
       <button class="btn-danger" id="btn-del-season" style="display:none">Hapus Musim</button>
       <button class="btn-cancel" id="btn-cancel-season">Batal</button>
@@ -1152,9 +1153,6 @@ async function computeSprayAnalysis(){
     rows.push({name:l.name||'(tanpa nama)',count,luas,biaya:count*luas*biayaHa});
   }
   const totalPerLahan=rows.reduce((a,r)=>a+r.biaya,0);
-  const totalCount=rows.reduce((a,r)=>a+r.count,0);
-  const totalLuas=rows.reduce((a,r)=>a+r.luas,0);
-  const totalGabungan=totalCount*totalLuas*biayaHa;
   if(!biayaHa){
     box.innerHTML=`<div style="font-size:12px;color:var(--text-3);text-align:center;padding:6px 0 4px;">Isi biaya semprot per hektar di atas untuk melihat perhitungan.</div>
       <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Semprot</th><th style="text-align:right;">Luas</th></tr></thead><tbody>
@@ -1166,19 +1164,11 @@ async function computeSprayAnalysis(){
     <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Semprot</th><th style="text-align:right;">Luas</th><th style="text-align:right;">Biaya</th></tr></thead><tbody>
     ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.count}×</td><td class="num">${fmtNum(r.luas)} ha</td><td class="num">${fmtRp(r.biaya)}</td></tr>`).join('')}
     </tbody></table>
-    <div class="ai-compare">
-      <div class="ai-compare-box">
-        <div class="lbl">Per Lahan Dijumlah</div>
-        <div class="val">${fmtRp(totalPerLahan)}</div>
-        <div class="sub">Tiap lahan dihitung sendiri (semprot × luas × biaya), baru dijumlah. Lebih akurat kalau jadwal semprot tiap lahan beda.</div>
-      </div>
-      <div class="ai-compare-box">
-        <div class="lbl">Digabung Total Musim</div>
-        <div class="val">${fmtRp(totalGabungan)}</div>
-        <div class="sub">${totalCount}× total semprot × ${fmtNum(totalLuas)} ha total × ${fmtRp(biayaHa)} = perkiraan kasar seolah semua lahan disemprot bersamaan.</div>
-      </div>
+    <div class="ai-compare-box">
+      <div class="lbl">Total Biaya Semprot Musim Ini</div>
+      <div class="val">${fmtRp(totalPerLahan)}</div>
+      <div class="sub">Dihitung per lahan (semprot × luas × biaya/ha), baru dijumlah semua lahan.</div>
     </div>
-    ${totalGabungan!==totalPerLahan?`<div class="ai-note">⚠️ Selisih ${fmtRp(Math.abs(totalGabungan-totalPerLahan))} antara dua cara hitung ini muncul karena lahan-lahan di musim ini punya jumlah semprot dan/atau luas yang berbeda. Untuk biaya riil, gunakan angka "Per Lahan Dijumlah".</div>`:''}
   `;
 }
 
@@ -1189,11 +1179,15 @@ function updateSummary(){
   const tLuas=lahans.reduce((a,l)=>a+(parseFloat(l.luas)||0),0);
   const tBerat=lahans.reduce((a,l)=>a+(parseFloat(l.berat)||0),0);
   const tRp=lahans.reduce((a,l)=>a+(parseFloat(l.pendapatan)||0),0);
+  const modalTanam=parseFloat(rawNum(String(localSeasons[VS.seasonId]?.modalTanam||'')))||0;
+  const untungRugi=tRp-modalTanam;
   sg.innerHTML=`
     <div class="sum-item"><div class="sl">Total Lahan</div><div class="sv">${tLahan}</div></div>
     <div class="sum-item"><div class="sl">Total Luas</div><div class="sv blue">${fmtNum(tLuas)} ha</div></div>
     <div class="sum-item"><div class="sl">Total Hasil</div><div class="sv gold">${fmtNum(tBerat)} kg</div></div>
-    <div class="sum-item"><div class="sl">Total Pendapatan</div><div class="sv green">${fmtRp(tRp)}</div></div>`;
+    <div class="sum-item"><div class="sl">Total Pendapatan</div><div class="sv green">${fmtRp(tRp)}</div></div>
+    <div class="sum-item" style="cursor:pointer;" onclick="openSeasonModal(VS.seasonId)"><div class="sl">Modal Tanam <span style="font-size:9px;">✏️</span></div><div class="sv">${modalTanam?fmtRp(modalTanam):'Belum diisi'}</div></div>
+    <div class="sum-item"><div class="sl">Untung/Rugi</div><div class="sv" style="color:${modalTanam?(untungRugi>=0?'var(--green)':'var(--danger)'):'var(--text-3)'};">${modalTanam?(untungRugi>=0?'+ ':'- ')+fmtRp(Math.abs(untungRugi)):'—'}</div></div>`;
   // update season stats in firebase
   if(VS.seasonId&&VS.catId){
     update(ref(db,`users/${uid}/seasons/${VS.catId}/${VS.seasonId}`),{lahanCount:tLahan,totalLuas:tLuas,totalBerat:tBerat,totalPendapatan:tRp});
@@ -1219,6 +1213,8 @@ function renderLahanList(){
 function lahanCardHTML(id,l,idx,n){
   const metodeList=Array.isArray(l.metodeList)?l.metodeList:(l.metode?[l.metode]:['Tabur']);
   const pills=metodeList.map((m,mi)=>`<span class="metode-pill ${mi===0?'active':''}">${esc(m)}<span class="pill-del" onclick="removeMetode('${id}',${mi})">×</span></span>`).join('');
+  const karungBersihInit=Math.max((parseFloat(l.karung)||0)-(parseFloat(l.bawon)||0),0);
+  const karungDijualInit=Math.max(karungBersihInit-(parseFloat(l.konsumsi)||0),0);
   const statusClass=l.panen?'badge-panen':'badge-belum';
   const statusText=l.panen?'✓ Panen':'Belum panen';
   const luasBadge=l.luas?`<span class="luas-badge">📐 ${fmtNum(l.luas)} ha</span>`:'';
@@ -1254,10 +1250,17 @@ function lahanCardHTML(id,l,idx,n){
         <div class="field-grid">
           <div class="field-group"><label>Total Panen (karung)</label><input type="text" inputmode="numeric" id="karung-${id}" value="${l.karung?fmtDot(l.karung):''}" oninput="onBawon('${id}','karung',this)" placeholder="0"/></div>
           <div class="field-group"><label>Bawon (karung) <span style="font-size:9px;color:var(--text-2);font-weight:400;">bagian pekerja/pengusaha</span></label><input type="text" inputmode="numeric" id="bawon-${id}" value="${l.bawon?fmtDot(l.bawon):''}" oninput="onBawon('${id}','bawon',this)" placeholder="0"/></div>
+          <div class="field-group"><label>Untuk Konsumsi (karung) <span style="font-size:9px;color:var(--text-2);font-weight:400;">dibawa pulang, tidak dijual</span></label><input type="text" inputmode="numeric" id="konsumsi-${id}" value="${l.konsumsi?fmtDot(l.konsumsi):''}" oninput="onBawon('${id}','konsumsi',this)" placeholder="0"/></div>
         </div>
-        <div style="background:rgba(0,0,0,.15);border-radius:9px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:11px;color:var(--text-2);">Karung Bersih (yang dijual)</span>
-          <span id="karung-bersih-${id}" style="font-size:16px;font-weight:800;color:var(--green);">${(parseFloat(l.karung||0)-parseFloat(l.bawon||0))>0?fmtDot(parseFloat(l.karung||0)-parseFloat(l.bawon||0)):((l.karung&&!l.bawon)?fmtDot(l.karung):'—')}</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div style="background:rgba(0,0,0,.15);border-radius:9px;padding:8px 12px;">
+            <div style="font-size:10px;color:var(--text-2);margin-bottom:2px;">Karung Bersih (setelah bawon)</div>
+            <span id="karung-bersih-${id}" style="font-size:15px;font-weight:800;color:var(--text-1);">${karungBersihInit>0?fmtDot(karungBersihInit):((l.karung&&!l.bawon)?fmtDot(l.karung):'—')}</span>
+          </div>
+          <div style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);border-radius:9px;padding:8px 12px;">
+            <div style="font-size:10px;color:var(--green);margin-bottom:2px;">🛒 Dijual (karung)</div>
+            <span id="karung-dijual-${id}" style="font-size:15px;font-weight:800;color:var(--green);">${karungDijualInit>0?fmtDot(karungDijualInit):(karungBersihInit>0?fmtDot(karungBersihInit):'—')}</span>
+          </div>
         </div>
         <div class="field-grid">
           <div class="field-group"><label>Berat Total (kg)</label><input type="text" inputmode="numeric" id="berat-${id}" value="${l.berat?fmtDot(l.berat):''}" oninput="onHasil('${id}','berat',this)" placeholder="0"/></div>
@@ -1297,7 +1300,7 @@ window.toggleLahan=function(id){
 
 window.addLahan=async function(){
   const lahanRef=push(ref(db,`users/${uid}/lahans/${VS.seasonId}`));
-  await set(lahanRef,{name:'',luas:'',varietas:'',metode:'Tabur',metodeList:['Tabur'],tanam:'',panen:'',karung:'',berat:'',harga:'',pendapatan:'',ojek:'',pengepul:'',catatan:'',order:Date.now(),createdAt:Date.now()});
+  await set(lahanRef,{name:'',luas:'',varietas:'',metode:'Tabur',metodeList:['Tabur'],tanam:'',panen:'',karung:'',bawon:'',konsumsi:'',berat:'',harga:'',pendapatan:'',ojek:'',pengepul:'',catatan:'',order:Date.now(),createdAt:Date.now()});
   trackEvent('lahan_ditambahkan');
   // open new card
   setTimeout(()=>{
@@ -1384,34 +1387,42 @@ window.onPendInput=function(id,inputEl){
 };
 
 // ── BAWON PADI ───────────────────────────────────────
+// Hitung ulang Pendapatan berdasarkan karung yang benar-benar DIJUAL (bukan total panen).
+// Kalau ada karung untuk konsumsi sendiri, pendapatan diprorata dari rasio karung dijual : karung bersih.
+function recalcPendapatan(id){
+  const l=localLahans[id]||{};
+  const berat=parseFloat(rawNum(String(l.berat||'')))||0;
+  const harga=parseFloat(rawNum(String(l.harga||'')))||0;
+  const totalKarung=parseFloat(rawNum(String(l.karung||'0')))||0;
+  const bawonK=parseFloat(rawNum(String(l.bawon||'0')))||0;
+  const bersihK=Math.max(totalKarung-bawonK,0);
+  const konsumsiK=parseFloat(rawNum(String(l.konsumsi||'0')))||0;
+  const dijualK=Math.max(bersihK-konsumsiK,0);
+  const ratio=bersihK>0?dijualK/bersihK:1;
+  const beratDijual=berat*ratio;
+  const pend=beratDijual&&harga?Math.round(beratDijual*harga).toString():'';
+  if(localLahans[id])localLahans[id].pendapatan=pend;
+  const inp=el('pend-'+id);
+  if(inp)inp.value=pend?Number(pend).toLocaleString('id-ID'):'';
+  clearTimeout(saveDbc[id+'_pendapatan']);
+  saveDbc[id+'_pendapatan']=setTimeout(()=>trackWrite(update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{pendapatan:pend})).then(()=>flashSaved(id)),600);
+  return{totalKarung,bawonK,bersihK,konsumsiK,dijualK};
+}
 window.onBawon=function(id,field,inputEl){
   const raw=formatNumberLive(inputEl);
   onLahanInput(id,field,raw||'');
-  // hitung karung bersih
-  const l=localLahans[id]||{};
-  const totalKarung=parseFloat(field==='karung'?raw:(rawNum(String(l.karung||'0'))))||0;
-  const bawon=parseFloat(field==='bawon'?raw:(rawNum(String(l.bawon||'0'))))||0;
-  const bersih=Math.max(totalKarung-bawon,0);
+  const{bersihK,dijualK}=recalcPendapatan(id);
   const bersihEl=el('karung-bersih-'+id);
-  if(bersihEl)bersihEl.textContent=bersih>0?bersih.toLocaleString('id-ID'):(totalKarung>0?totalKarung.toLocaleString('id-ID'):'—');
-  // update result boxes
+  if(bersihEl)bersihEl.textContent=bersihK>0?bersihK.toLocaleString('id-ID'):'—';
+  const dijualEl=el('karung-dijual-'+id);
+  if(dijualEl)dijualEl.textContent=dijualK>0?dijualK.toLocaleString('id-ID'):(bersihK>0?bersihK.toLocaleString('id-ID'):'—');
   updateResultBoxesExt(id);
 };
 
 window.onHasil=function(id,field,inputEl){
   const raw=typeof inputEl==='object'?formatNumberLive(inputEl):rawNum(inputEl);
   onLahanInput(id,field,raw||'');
-  const l=localLahans[id]||{};
-  if(field==='berat'||field==='harga'){
-    const berat=parseFloat(field==='berat'?raw:rawNum(String(l.berat||'')))||0;
-    const harga=parseFloat(field==='harga'?raw:rawNum(String(l.harga||'')))||0;
-    const pend=berat&&harga?(berat*harga).toString():'';
-    if(localLahans[id])localLahans[id].pendapatan=pend;
-    const inp=el('pend-'+id);
-    if(inp)inp.value=pend?Number(pend).toLocaleString('id-ID'):'';
-    clearTimeout(saveDbc[id+'_pendapatan']);
-    saveDbc[id+'_pendapatan']=setTimeout(()=>trackWrite(update(ref(db,`users/${uid}/lahans/${VS.seasonId}/${id}`),{pendapatan:pend})).then(()=>flashSaved(id)),600);
-  }
+  if(field==='berat'||field==='harga')recalcPendapatan(id);
   updateResultBoxesExt(id);
 };
 
@@ -1690,7 +1701,7 @@ el('btn-do-import').addEventListener('click',async()=>{
   for(const chk of checked){
     const src=srcLahans[chk.value];if(!src)continue;
     const newL={name:src.name,luas:optLuas?(src.luas||''):'',varietas:optVarMet?(src.varietas||''):'',metode:optVarMet?(src.metode||'Tabur'):'Tabur',metodeList:optVarMet?(Array.isArray(src.metodeList)?[...src.metodeList]:['Tabur']):['Tabur'],tanam:'',panen:'',karung:'',berat:'',pendapatan:'',ojek:optOjek?(src.ojek||''):'',pengepul:optOjek?(src.pengepul||''):'',harga:optHarga?(src.harga||''):'',catatan:'',order:Date.now()+count,createdAt:Date.now()};
-    if(optHasil){newL.karung=src.karung||'';newL.berat=src.berat||'';newL.pendapatan=src.pendapatan||'';}
+    if(optHasil){newL.karung=src.karung||'';newL.bawon=src.bawon||'';newL.konsumsi=src.konsumsi||'';newL.berat=src.berat||'';newL.pendapatan=src.pendapatan||'';}
     await push(ref(db,`users/${uid}/lahans/${VS.seasonId}`),newL);
     count++;
   }
@@ -2199,6 +2210,7 @@ function openSeasonModal(seasonId){
   editingSeasonId=seasonId;
   el('season-modal-title').textContent=seasonId?'Edit Musim':'Musim Tanam Baru';
   el('season-name').value=seasonId?(localSeasons[seasonId]?.name||''):'';
+  el('season-modal').value=seasonId&&localSeasons[seasonId]?.modalTanam?fmtDot(localSeasons[seasonId].modalTanam):'';
   el('btn-del-season').style.display=seasonId?'block':'none';
   openOverlay('ov-season');
   setTimeout(()=>el('season-name').focus(),200);
@@ -2207,13 +2219,14 @@ window.openSeasonModal=openSeasonModal;
 
 el('btn-save-season').addEventListener('click',async()=>{
   const name=el('season-name').value.trim();if(!name){showToast('Nama musim belum diisi.');return;}
+  const modalTanam=rawNum(el('season-modal').value)||'';
   if(editingSeasonId){
-    await update(ref(db,`users/${uid}/seasons/${VS.catId}/${editingSeasonId}`),{name});
+    await update(ref(db,`users/${uid}/seasons/${VS.catId}/${editingSeasonId}`),{name,modalTanam});
     if(VS.view==='season-detail'&&VS.seasonId===editingSeasonId)el('hdr').querySelector('.hdr-title').textContent=name;
   }else{
     const cnt=Object.keys(localSeasons).length;
     const newRef=push(ref(db,`users/${uid}/seasons/${VS.catId}`));
-    await set(newRef,{name,order:Date.now(),lahanCount:0,totalLuas:0,totalBerat:0,totalPendapatan:0,createdAt:Date.now()});
+    await set(newRef,{name,modalTanam,order:Date.now(),lahanCount:0,totalLuas:0,totalBerat:0,totalPendapatan:0,createdAt:Date.now()});
     await update(ref(db,`users/${uid}/categories/${VS.catId}`),{seasonCount:cnt+1});
     trackEvent('musim_dibuat',{name});
   }
@@ -2258,7 +2271,9 @@ const COMPARE_METRICS=[
   {key:'totalLuas',label:'Luas Tanam',unit:'ha',color:'#60A5FA',fmt:v=>fmtNum(v)+' ha'},
   {key:'totalBerat',label:'Hasil Panen',unit:'kg',color:'#FBBF24',fmt:v=>fmtNum(v)+' kg'},
   {key:'totalPendapatan',label:'Pendapatan',unit:'Rp',color:'#34D399',fmt:v=>fmtRp(v)},
-  {key:'produktivitas',label:'Produktivitas',unit:'kg/ha',color:'#BF5AF2',fmt:v=>fmtNum(v)+' kg/ha'}
+  {key:'produktivitas',label:'Produktivitas',unit:'kg/ha',color:'#BF5AF2',fmt:v=>fmtNum(v)+' kg/ha'},
+  {key:'modalTanam',label:'Modal Tanam',unit:'Rp',color:'#FF9F0A',fmt:v=>fmtRp(v)},
+  {key:'untungRugi',label:'Untung/Rugi',unit:'Rp',color:'#34D399',fmt:v=>(v>=0?'+ ':'- ')+fmtRp(Math.abs(v))}
 ];
 let _compareMetric='totalLuas';
 window.openCompareModal=function(){
@@ -2284,16 +2299,31 @@ function renderCompareBody(){
   const vals=seasons.map(([id,s])=>{
     const luas=parseFloat(s.totalLuas)||0;
     const berat=parseFloat(s.totalBerat)||0;
-    const v=metric.key==='produktivitas'?(luas?berat/luas:0):(parseFloat(s[metric.key])||0);
-    return{id,name:s.name,v};
+    const modal=parseFloat(rawNum(String(s.modalTanam||'')))||0;
+    const pend=parseFloat(s.totalPendapatan)||0;
+    let v;
+    if(metric.key==='produktivitas')v=luas?berat/luas:0;
+    else if(metric.key==='modalTanam')v=modal;
+    else if(metric.key==='untungRugi')v=pend-modal;
+    else v=parseFloat(s[metric.key])||0;
+    return{id,name:s.name,v,hasModal:modal>0};
   });
-  const maxV=Math.max(...vals.map(x=>x.v),0.0001);
-  const bestId=vals.reduce((best,x)=>x.v>best.v?x:best,vals[0]).id;
+  const isProfitMetric=metric.key==='untungRugi';
+  const maxV=Math.max(...vals.map(x=>Math.abs(x.v)),0.0001);
+  const validVals=isProfitMetric?vals.filter(x=>x.hasModal):vals;
+  const bestId=validVals.length?validVals.reduce((best,x)=>x.v>best.v?x:best,validVals[0]).id:null;
   body.innerHTML=vals.map(x=>{
-    const pct=Math.max(2,Math.round(x.v/maxV*100));
+    if(isProfitMetric&&!x.hasModal){
+      return`<div class="compare-bar-row">
+        <div class="compare-bar-lbl"><span>${esc(x.name)}</span><b style="color:var(--text-3);">Modal belum diisi</b></div>
+        <div class="compare-bar-track"></div>
+      </div>`;
+    }
+    const pct=Math.max(2,Math.round(Math.abs(x.v)/maxV*100));
+    const barColor=isProfitMetric?(x.v>=0?'#34D399':'#FF453A'):metric.color;
     return`<div class="compare-bar-row">
-      <div class="compare-bar-lbl"><span>${esc(x.name)}${x.id===bestId&&x.v>0?'<span class="compare-best">🏆 Tertinggi</span>':''}</span><b>${metric.fmt(x.v)}</b></div>
-      <div class="compare-bar-track"><div class="compare-bar-fill" style="width:${pct}%;background:${metric.color};"></div></div>
+      <div class="compare-bar-lbl"><span>${esc(x.name)}${x.id===bestId&&x.v>0?'<span class="compare-best">🏆 Tertinggi</span>':''}</span><b style="${isProfitMetric?`color:${x.v>=0?'var(--green)':'var(--danger)'};`:''}">${metric.fmt(x.v)}</b></div>
+      <div class="compare-bar-track"><div class="compare-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
     </div>`;
   }).join('');
 }
@@ -2343,4 +2373,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-  </html>
+          </html>

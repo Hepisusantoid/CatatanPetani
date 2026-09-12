@@ -227,7 +227,7 @@ header.glass::before{display:none;}
 .metode-add:active{background:rgba(52,211,153,.3);}
 
 /* Result boxes */
-.result-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+.result-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
 .res-box{background:rgba(16,185,129,.18);border:1px solid rgba(52,211,153,.25);border-radius:10px;padding:11px 10px;}
 .res-box .rl{font-size:9px;color:var(--green);margin-bottom:4px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;opacity:1;}
 .res-box .rv{font-size:13px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 1px 3px rgba(0,0,0,.4);}
@@ -1179,18 +1179,31 @@ function updateSummary(){
   const tLuas=lahans.reduce((a,l)=>a+(parseFloat(l.luas)||0),0);
   const tBerat=lahans.reduce((a,l)=>a+(parseFloat(l.berat)||0),0);
   const tRp=lahans.reduce((a,l)=>a+(parseFloat(l.pendapatan)||0),0);
+  // Estimasi Berat Kotor: per lahan, (berat dijual ÷ karung dijual) × total karung panen (sebelum bawon & konsumsi)
+  const tBeratKotor=lahans.reduce((a,l)=>{
+    const berat=parseFloat(rawNum(String(l.berat||'')))||0;
+    const totalKarung=parseFloat(rawNum(String(l.karung||'')))||0;
+    const bawonK=parseFloat(rawNum(String(l.bawon||'')))||0;
+    const bersihK=Math.max(totalKarung-bawonK,0);
+    const konsumsiK=parseFloat(rawNum(String(l.konsumsi||'')))||0;
+    const dijualK=Math.max(bersihK-konsumsiK,0);
+    if(!dijualK||!berat||!totalKarung)return a;
+    const kgPerKarung=berat/dijualK;
+    return a+(kgPerKarung*totalKarung);
+  },0);
   const modalTanam=parseFloat(rawNum(String(localSeasons[VS.seasonId]?.modalTanam||'')))||0;
   const untungRugi=tRp-modalTanam;
   sg.innerHTML=`
     <div class="sum-item"><div class="sl">Total Lahan</div><div class="sv">${tLahan}</div></div>
     <div class="sum-item"><div class="sl">Total Luas</div><div class="sv blue">${fmtNum(tLuas)} ha</div></div>
-    <div class="sum-item"><div class="sl">Total Hasil</div><div class="sv gold">${fmtNum(tBerat)} kg</div></div>
+    <div class="sum-item"><div class="sl">Total Hasil (dijual)</div><div class="sv gold">${fmtNum(tBerat)} kg</div></div>
+    <div class="sum-item"><div class="sl">Estimasi Berat Kotor <span style="font-size:9px;">≈</span></div><div class="sv" style="color:#FBBF24;">${tBeratKotor?fmtNum(tBeratKotor)+' kg':'—'}</div></div>
     <div class="sum-item"><div class="sl">Total Pendapatan</div><div class="sv green">${fmtRp(tRp)}</div></div>
     <div class="sum-item" style="cursor:pointer;" onclick="openSeasonModal(VS.seasonId)"><div class="sl">Modal Tanam <span style="font-size:9px;">✏️</span></div><div class="sv">${modalTanam?fmtRp(modalTanam):'Belum diisi'}</div></div>
     <div class="sum-item"><div class="sl">Untung/Rugi</div><div class="sv" style="color:${modalTanam?(untungRugi>=0?'var(--green)':'var(--danger)'):'var(--text-3)'};">${modalTanam?(untungRugi>=0?'+ ':'- ')+fmtRp(Math.abs(untungRugi)):'—'}</div></div>`;
   // update season stats in firebase
   if(VS.seasonId&&VS.catId){
-    update(ref(db,`users/${uid}/seasons/${VS.catId}/${VS.seasonId}`),{lahanCount:tLahan,totalLuas:tLuas,totalBerat:tBerat,totalPendapatan:tRp});
+    update(ref(db,`users/${uid}/seasons/${VS.catId}/${VS.seasonId}`),{lahanCount:tLahan,totalLuas:tLuas,totalBerat:tBerat,totalPendapatan:tRp,totalBeratKotorEstimasi:tBeratKotor});
   }
 }
 
@@ -1215,6 +1228,8 @@ function lahanCardHTML(id,l,idx,n){
   const pills=metodeList.map((m,mi)=>`<span class="metode-pill ${mi===0?'active':''}">${esc(m)}<span class="pill-del" onclick="removeMetode('${id}',${mi})">×</span></span>`).join('');
   const karungBersihInit=Math.max((parseFloat(l.karung)||0)-(parseFloat(l.bawon)||0),0);
   const karungDijualInit=Math.max(karungBersihInit-(parseFloat(l.konsumsi)||0),0);
+  const kgPerKarungInit=karungDijualInit>0&&l.berat?parseFloat(l.berat)/karungDijualInit:0;
+  const beratKotorInit=kgPerKarungInit&&l.karung?kgPerKarungInit*parseFloat(l.karung):0;
   const statusClass=l.panen?'badge-panen':'badge-belum';
   const statusText=l.panen?'✓ Panen':'Belum panen';
   const luasBadge=l.luas?`<span class="luas-badge">📐 ${fmtNum(l.luas)} ha</span>`:'';
@@ -1273,6 +1288,7 @@ function lahanCardHTML(id,l,idx,n){
         <div class="res-box"><div class="rl">Rata-rata (dijual)</div><div class="rv" id="rv-rata-${id}">${l.luas&&l.berat?fmtNum(parseFloat(l.berat)/parseFloat(l.luas))+' kg/ha':'—'}</div></div>
         <div class="res-box"><div class="rl">Pendapatan/ha</div><div class="rv" id="rv-perha-${id}">${l.luas&&l.pendapatan?fmtRp(parseFloat(l.pendapatan)/parseFloat(l.luas))+'/ha':'—'}</div></div>
         <div class="res-box"><div class="rl">kg/karung (dijual)</div><div class="rv" id="rv-kgkar-${id}">${karungDijualInit>0&&l.berat?fmtNum(parseFloat(l.berat)/karungDijualInit)+' kg':(karungBersihInit>0&&l.berat?fmtNum(parseFloat(l.berat)/karungBersihInit)+' kg':'—')}</div></div>
+        <div class="res-box"><div class="rl">Estimasi Berat Kotor</div><div class="rv" id="rv-kotor-${id}" style="color:#FBBF24;">${beratKotorInit?fmtNum(beratKotorInit)+' kg':'—'}</div></div>
       </div>
       <div class="field-grid"><div class="field-group full"><label>Catatan</label><textarea oninput="onLahanInput('${id}','catatan',this.value)" placeholder="Catatan tambahan...">${esc(l.catatan||'')}</textarea></div></div>
 
@@ -1436,10 +1452,15 @@ function updateResultBoxesExt(id){
   const bersih=Math.max(karungTotal-bawon,0);
   const konsumsi=parseFloat(rawNum(String(ll.konsumsi||'')))||0;
   const dijual=Math.max(bersih-konsumsi,0)||bersih||karungTotal;
-  const r1=el('rv-rata-'+id),r2=el('rv-perha-'+id),r3=el('rv-kgkar-'+id);
+  const r1=el('rv-rata-'+id),r2=el('rv-perha-'+id),r3=el('rv-kgkar-'+id),r4=el('rv-kotor-'+id);
   if(r1)r1.textContent=luas&&berat?fmtNum(berat/luas)+' kg/ha':'—';
   if(r2)r2.textContent=luas&&pend?fmtRp(pend/luas)+'/ha':'—';
   if(r3)r3.textContent=dijual&&berat?fmtNum(berat/dijual)+' kg':'—';
+  if(r4){
+    const kgPerKarung=dijual&&berat?berat/dijual:0;
+    const beratKotor=kgPerKarung&&karungTotal?kgPerKarung*karungTotal:0;
+    r4.textContent=beratKotor?fmtNum(beratKotor)+' kg':'—';
+  }
 }
 
 window.onLahanInput=function(id,field,value){
@@ -2375,4 +2396,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-  </html>
+      </html>

@@ -762,6 +762,8 @@ document.addEventListener('click',e=>{
 
 // ── STATUS KONEKSI & SINKRONISASI ────────────────────
 let isOnline=true;
+let hasConnectedOnce=false;
+let _connGraceTimer=null;
 let pendingWrites=0;
 function trackWrite(promise){
   pendingWrites++;
@@ -790,8 +792,24 @@ function renderConnBar(){
   }
 }
 onValue(ref(db,'.info/connected'),snap=>{
-  isOnline=snap.val()===true;
-  renderConnBar();
+  const connected=snap.val()===true;
+  if(connected){
+    hasConnectedOnce=true;
+    clearTimeout(_connGraceTimer);
+    isOnline=true;
+    renderConnBar();
+  }else if(!hasConnectedOnce){
+    // Koneksi PERTAMA KALI sedang proses handshake — ini normal & sebentar (biasanya <1 detik)
+    // walau sinyal bagus, jadi beri jeda toleransi sebelum dianggap benar-benar offline.
+    clearTimeout(_connGraceTimer);
+    _connGraceTimer=setTimeout(()=>{
+      if(!hasConnectedOnce){isOnline=false;renderConnBar();}
+    },4000);
+  }else{
+    // Sudah pernah tersambung sebelumnya lalu terputus — ini putus sungguhan, tampilkan langsung.
+    isOnline=false;
+    renderConnBar();
+  }
 });
 
 // ── ANALITIK SEDERHANA (funnel) ──────────────────────
@@ -2653,4 +2671,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-  </html>
+        </html>

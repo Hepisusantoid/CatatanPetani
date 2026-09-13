@@ -817,6 +817,7 @@ onAuthStateChanged(auth,user=>{
       lastSeen:Date.now(),
     }).catch(()=>{});
     trackEvent('login_berhasil');
+    setTimeout(checkTodayReminder,1500);
     navigate('home');
   }else{
     uid=null;localCats={};localSeasons={};localLahans={};localPerawatan={};
@@ -875,10 +876,12 @@ function renderHeader(){
         </div>
       </div>
       <div class="hdr-actions">
+        <button class="btn-icon" id="btn-reminder" onclick="toggleReminder()" style="width:36px;height:36px;">🔔</button>
         <button class="btn-icon" id="btn-help" onclick="showOnboarding()" style="width:36px;height:36px;">❓</button>
         <img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">
       </div>
     </div>`;
+    updateReminderBellIcon();
   } else if(onJadwal){
     h.innerHTML=`<div class="hdr-home-row">
       <div>
@@ -1076,20 +1079,28 @@ window.moveSeason=async function(seasonId,dir){
 function renderSeasonDetail(container){
   container.innerHTML=`
     <div class="sum-bar glass" id="sum-bar">
-      <div class="sum-bar-title">Ringkasan Musim</div>
-      <div class="sum-grid" id="sum-grid"></div>
+      <div class="sec-row-hd" style="margin-bottom:0;">
+        <div class="sum-bar-title" style="margin-bottom:0;">Ringkasan Musim</div>
+        <button class="btn-compare" style="background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.35);color:var(--green);" onclick="shareHarvestCard()">📤 Bagikan</button>
+      </div>
+      <div class="sum-grid" id="sum-grid" style="margin-top:10px;"></div>
     </div>
     <div class="ai-card glass" id="ai-card">
       <div class="ai-hd" onclick="toggleAiCard()">
-        <div class="ai-hd-title">🧠 Analisa Pintar · Biaya Semprot</div>
+        <div class="ai-hd-title">🧠 Analisa Pintar · Estimasi Biaya</div>
         <span class="ai-chev" id="ai-chev">▼</span>
       </div>
       <div class="ai-body" id="ai-body">
-        <div class="ai-input-row">
+        <div class="compare-tabs" id="ai-tabs" style="margin:0 0 14px;">
+          <button type="button" class="compare-tab active" onclick="switchAiTab('semprot')">💧 Semprot</button>
+          <button type="button" class="compare-tab" onclick="switchAiTab('ojek')">🛵 Ojek</button>
+          <button type="button" class="compare-tab" onclick="switchAiTab('panen')">🌾 Panen (Bawon)</button>
+        </div>
+        <div class="ai-input-row" id="ai-input-row">
           <label>Biaya semprot / ha</label>
           <input type="text" inputmode="numeric" id="ai-biaya-input" placeholder="Contoh: 150.000" oninput="onAiBiayaInput(this)">
         </div>
-        <div id="ai-content"><div style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Memuat data penyemprotan…</div></div>
+        <div id="ai-content"><div style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Memuat data…</div></div>
       </div>
     </div>
     <div class="action-row">
@@ -1106,21 +1117,108 @@ function renderSeasonDetail(container){
     const idsChanged=[...newIds].some(id=>!prevIds.has(id))||[...prevIds].some(id=>!newIds.has(id));
     localLahans=newData;
     updateSummary();
-    if(idsChanged){renderLahanList();computeSprayAnalysis();}
+    if(idsChanged){renderLahanList();computeAiAnalysis();}
     // update import button
     const btn=el('btn-import');
     if(btn)btn.style.display=Object.keys(localSeasons).length>1?'flex':'none';
   });
   viewUnsubs.push(unsub);
-  computeSprayAnalysis();
+  computeAiAnalysis();
 }
 
-// ── ANALISA PINTAR: BIAYA SEMPROT ────────────────────
+// ── PENGINGAT (NOTIFIKASI LOKAL) ─────────────────────
+// Catatan jujur: ini BUKAN push notification server (app ini tidak punya backend).
+// Ini notifikasi lokal browser yang dicek & ditampilkan setiap kali app dibuka —
+// jadi hanya muncul saat pengguna benar-benar membuka aplikasi hari itu, bukan saat app tertutup.
+function updateReminderBellIcon(){
+  const btn=el('btn-reminder');if(!btn)return;
+  const enabled=localStorage.getItem('cp_reminder_on')==='1';
+  const supported='Notification' in window;
+  if(!supported){btn.style.opacity='0.35';btn.textContent='🔕';return;}
+  btn.style.opacity=enabled&&Notification.permission==='granted'?'1':'0.45';
+  btn.textContent=enabled&&Notification.permission==='granted'?'🔔':'🔕';
+}
+window.toggleReminder=async function(){
+  if(!('Notification' in window)){
+    showToast('Browser ini tidak mendukung notifikasi.');
+    return;
+  }
+  const enabled=localStorage.getItem('cp_reminder_on')==='1';
+  if(enabled){
+    localStorage.setItem('cp_reminder_on','0');
+    showToast('Pengingat dimatikan.');
+    updateReminderBellIcon();
+    return;
+  }
+  if(Notification.permission==='denied'){
+    showToast('Izin notifikasi diblokir. Aktifkan lewat pengaturan browser/situs.');
+    return;
+  }
+  let perm=Notification.permission;
+  if(perm!=='granted'){
+    perm=await Notification.requestPermission();
+  }
+  if(perm==='granted'){
+    localStorage.setItem('cp_reminder_on','1');
+    localStorage.removeItem('cp_reminder_last_date');
+    showToast('Pengingat diaktifkan. Cek tugas akan muncul tiap kamu buka app.');
+    updateReminderBellIcon();
+    checkTodayReminder();
+  }else{
+    showToast('Izin notifikasi tidak diberikan.');
+  }
+};
+async function checkTodayReminder(){
+  if(!uid)return;
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  if(localStorage.getItem('cp_reminder_on')!=='1')return;
+  const todayStr=new Date().toISOString().slice(0,10);
+  if(localStorage.getItem('cp_reminder_last_date')===todayStr)return; // sudah kasih notif hari ini
+  try{
+    const cSnap=await get(ref(db,`users/${uid}/categories`));
+    const cats=cSnap.val()||{};
+    const activeLahans=[];
+    await Promise.all(Object.entries(cats).map(async([catId,cat])=>{
+      const sSnap=await get(ref(db,`users/${uid}/seasons/${catId}`));
+      const seasons=sSnap.val()||{};
+      await Promise.all(Object.entries(seasons).map(async([seasonId,season])=>{
+        const lSnap=await get(ref(db,`users/${uid}/lahans/${seasonId}`));
+        const lahans=lSnap.val()||{};
+        Object.entries(lahans).forEach(([lahanId,lahan])=>{
+          if(!lahan.tanam||lahan.panen)return;
+          activeLahans.push({lahanId,catId,catName:cat.name,catIcon:cat.icon||'📦',seasonId,seasonName:season.name,lahan,lastLog:null,daysSinceLast:null});
+        });
+      }));
+    }));
+    if(!activeLahans.length)return;
+    const allSaran=[];
+    activeLahans.forEach(item=>allSaran.push(...generateSaran(item)));
+    const penting=allSaran.filter(s=>s.label==='Mendesak'||s.label==='Kritis'||s.label==='Segera'||s.label==='Hari ini');
+    localStorage.setItem('cp_reminder_last_date',todayStr);
+    if(!penting.length)return;
+    const n=new Notification('🌾 Catatan Petani',{
+      body:`Ada ${penting.length} tugas menunggu hari ini: ${penting[0].title}${penting.length>1?` (+${penting.length-1} lainnya)`:''}`,
+      tag:'cp-daily-reminder'
+    });
+    n.onclick=()=>{window.focus();navigate('jadwal');n.close();};
+  }catch(e){/* diam-diam gagal, tidak mengganggu pengguna */}
+}
+
+// ── ANALISA PINTAR: ESTIMASI BIAYA ───────────────────
 let _aiOpen=false;
+let _aiTab='semprot';
 window.toggleAiCard=function(){
   _aiOpen=!_aiOpen;
   el('ai-body').classList.toggle('open',_aiOpen);
   el('ai-chev').classList.toggle('open',_aiOpen);
+};
+window.switchAiTab=function(tab){
+  _aiTab=tab;
+  document.querySelectorAll('#ai-tabs .compare-tab').forEach((b,i)=>{
+    b.classList.toggle('active',['semprot','ojek','panen'][i]===tab);
+  });
+  el('ai-input-row').style.display=tab==='semprot'?'flex':'none';
+  computeAiAnalysis();
 };
 window.onAiBiayaInput=function(inputEl){
   const raw=formatNumberLive(inputEl);
@@ -1129,16 +1227,21 @@ window.onAiBiayaInput=function(inputEl){
     if(!uid||!VS.seasonId)return;
     trackWrite(update(ref(db,`users/${uid}/seasons/${VS.catId}/${VS.seasonId}`),{biayaSemprotPerHa:raw||''}));
     if(localSeasons[VS.seasonId])localSeasons[VS.seasonId].biayaSemprotPerHa=raw||'';
-    computeSprayAnalysis();
+    computeAiAnalysis();
   },600);
 };
-async function computeSprayAnalysis(){
+async function computeAiAnalysis(){
   const box=el('ai-content');if(!box)return;
   const lahanEntries=Object.entries(localLahans);
   if(!lahanEntries.length){
     box.innerHTML='<div style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Belum ada lahan di musim ini.</div>';
     return;
   }
+  if(_aiTab==='semprot')return computeSemprotTab(box,lahanEntries);
+  if(_aiTab==='ojek')return computeOjekTab(box,lahanEntries);
+  if(_aiTab==='panen')return computePanenTab(box,lahanEntries);
+}
+async function computeSemprotTab(box,lahanEntries){
   box.innerHTML='<div style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Menghitung jumlah penyemprotan…</div>';
   const biayaHa=parseFloat(rawNum(String(localSeasons[VS.seasonId]?.biayaSemprotPerHa||'')))||0;
   const rows=[];
@@ -1152,7 +1255,7 @@ async function computeSprayAnalysis(){
     const luas=parseFloat(rawDecimal(String(l.luas||'')))||0;
     rows.push({name:l.name||'(tanpa nama)',count,luas,biaya:count*luas*biayaHa});
   }
-  const totalPerLahan=rows.reduce((a,r)=>a+r.biaya,0);
+  const total=rows.reduce((a,r)=>a+r.biaya,0);
   if(!biayaHa){
     box.innerHTML=`<div style="font-size:12px;color:var(--text-3);text-align:center;padding:6px 0 4px;">Isi biaya semprot per hektar di atas untuk melihat perhitungan.</div>
       <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Semprot</th><th style="text-align:right;">Luas</th></tr></thead><tbody>
@@ -1166,10 +1269,66 @@ async function computeSprayAnalysis(){
     </tbody></table>
     <div class="ai-compare-box">
       <div class="lbl">Total Biaya Semprot Musim Ini</div>
-      <div class="val">${fmtRp(totalPerLahan)}</div>
-      <div class="sub">Dihitung per lahan (semprot × luas × biaya/ha), baru dijumlah semua lahan.</div>
-    </div>
-  `;
+      <div class="val">${fmtRp(total)}</div>
+      <div class="sub">Dihitung per lahan (jumlah semprot × luas × biaya/ha), baru dijumlah semua lahan.</div>
+    </div>`;
+}
+function computeOjekTab(box,lahanEntries){
+  const rows=lahanEntries.map(([lid,l])=>{
+    const ojekRp=parseFloat(rawNum(String(l.ojek||'')))||0;
+    const totalKarung=parseFloat(rawNum(String(l.karung||'')))||0;
+    return{name:l.name||'(tanpa nama)',ojekRp,totalKarung,biaya:ojekRp*totalKarung};
+  });
+  const total=rows.reduce((a,r)=>a+r.biaya,0);
+  const anyOjek=rows.some(r=>r.ojekRp>0);
+  if(!anyOjek){
+    box.innerHTML=`<div style="font-size:12px;color:var(--text-3);text-align:center;padding:6px 0 4px;">Isi kolom "Ojek (Rp/karung)" di tiap lahan untuk melihat perhitungan ini.</div>
+      <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Karung</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.totalKarung||'—'}</td></tr>`).join('')}
+      </tbody></table>`;
+    return;
+  }
+  box.innerHTML=`
+    <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Karung</th><th style="text-align:right;">Rp/karung</th><th style="text-align:right;">Biaya</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.totalKarung||'—'}</td><td class="num">${r.ojekRp?fmtRp(r.ojekRp):'—'}</td><td class="num">${fmtRp(r.biaya)}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="ai-compare-box">
+      <div class="lbl">Total Biaya Ojek Musim Ini</div>
+      <div class="val">${fmtRp(total)}</div>
+      <div class="sub">Dihitung dari total karung panen × biaya ojek per karung, tiap lahan.</div>
+    </div>`;
+}
+function computePanenTab(box,lahanEntries){
+  const rows=lahanEntries.map(([lid,l])=>{
+    const totalKarung=parseFloat(rawNum(String(l.karung||'')))||0;
+    const bawonK=parseFloat(rawNum(String(l.bawon||'')))||0;
+    const konsumsiK=parseFloat(rawNum(String(l.konsumsi||'')))||0;
+    const bersihK=Math.max(totalKarung-bawonK,0);
+    const dijualK=Math.max(bersihK-konsumsiK,0);
+    const berat=parseFloat(rawNum(String(l.berat||'')))||0;
+    const harga=parseFloat(rawNum(String(l.harga||'')))||0;
+    const kgPerKarung=dijualK>0?berat/dijualK:0;
+    const nilaiBawon=bawonK*kgPerKarung*harga;
+    return{name:l.name||'(tanpa nama)',bawonK,kgPerKarung,harga,biaya:nilaiBawon};
+  });
+  const total=rows.reduce((a,r)=>a+r.biaya,0);
+  const anyBawon=rows.some(r=>r.bawonK>0&&r.kgPerKarung>0&&r.harga>0);
+  if(!anyBawon){
+    box.innerHTML=`<div style="font-size:12px;color:var(--text-3);text-align:center;padding:6px 0 4px;">Isi Bawon, Berat, dan Harga di tiap lahan untuk melihat estimasi nilai bawon ini.</div>
+      <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Bawon</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.bawonK||'—'}</td></tr>`).join('')}
+      </tbody></table>`;
+    return;
+  }
+  box.innerHTML=`
+    <table class="ai-table"><thead><tr><th>Lahan</th><th style="text-align:right;">Bawon</th><th style="text-align:right;">kg/karung</th><th style="text-align:right;">Nilai</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.bawonK||'—'}</td><td class="num">${r.kgPerKarung?fmtNum(r.kgPerKarung):'—'}</td><td class="num">${fmtRp(r.biaya)}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="ai-compare-box">
+      <div class="lbl">Estimasi Nilai Bawon (Biaya Panen) Musim Ini</div>
+      <div class="val">${fmtRp(total)}</div>
+      <div class="sub">Dihitung dari karung bawon × berat rata-rata per karung (dijual) × harga jual, tiap lahan. Ini nilai dalam bentuk barang (upah panen dibayar pakai gabah/hasil), bukan uang tunai yang keluar.</div>
+    </div>`;
 }
 
 function updateSummary(){
@@ -1205,6 +1364,104 @@ function updateSummary(){
   if(VS.seasonId&&VS.catId){
     update(ref(db,`users/${uid}/seasons/${VS.catId}/${VS.seasonId}`),{lahanCount:tLahan,totalLuas:tLuas,totalBerat:tBerat,totalPendapatan:tRp,totalBeratKotorEstimasi:tBeratKotor});
   }
+}
+
+// ── KARTU EKSPOR HASIL PANEN ──────────────────────────
+window.shareHarvestCard=async function(){
+  const lahans=Object.values(localLahans);
+  const tLuas=lahans.reduce((a,l)=>a+(parseFloat(l.luas)||0),0);
+  const tBerat=lahans.reduce((a,l)=>a+(parseFloat(l.berat)||0),0);
+  const tRp=lahans.reduce((a,l)=>a+(parseFloat(l.pendapatan)||0),0);
+  const modalTanam=parseFloat(rawNum(String(localSeasons[VS.seasonId]?.modalTanam||'')))||0;
+  const untungRugi=tRp-modalTanam;
+  const seasonName=localSeasons[VS.seasonId]?.name||'Musim Tanam';
+  const catName=VS.catName||'';
+
+  const W=1080,H=1350;
+  const canvas=document.createElement('canvas');
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+
+  const grad=ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'#1a0f3d');
+  grad.addColorStop(0.55,'#2d1b5e');
+  grad.addColorStop(1,'#0c2318');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+
+  ctx.globalAlpha=0.13;
+  ctx.fillStyle='#34D399';
+  ctx.beginPath();ctx.arc(W-60,90,240,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+
+  ctx.fillStyle='#34D399';
+  ctx.font='bold 32px sans-serif';
+  ctx.fillText('🌾 CATATAN PETANI',70,95);
+
+  ctx.fillStyle='#ffffff';
+  wrapCanvasText(ctx,seasonName,70,185,W-140,60,'bold 60px sans-serif');
+  ctx.fillStyle='rgba(255,255,255,0.6)';
+  ctx.font='30px sans-serif';
+  ctx.fillText(catName,70,dynLabelY(seasonName,W-140,60,225));
+
+  ctx.strokeStyle='rgba(255,255,255,0.15)';
+  ctx.beginPath();ctx.moveTo(70,275);ctx.lineTo(W-70,275);ctx.stroke();
+
+  function statRow(y,label,value,color){
+    ctx.fillStyle='rgba(255,255,255,0.55)';
+    ctx.font='26px sans-serif';
+    ctx.fillText(label,70,y);
+    ctx.fillStyle=color||'#ffffff';
+    ctx.font='bold 50px sans-serif';
+    ctx.fillText(value,70,y+58);
+  }
+  let y=365;
+  statRow(y,'TOTAL LUAS TANAM',fmtNum(tLuas)+' ha','#60A5FA');y+=135;
+  statRow(y,'TOTAL HASIL PANEN (DIJUAL)',fmtNum(tBerat)+' kg','#FBBF24');y+=135;
+  statRow(y,'TOTAL PENDAPATAN',fmtRp(tRp),'#34D399');y+=135;
+  if(modalTanam){
+    statRow(y,untungRugi>=0?'UNTUNG':'RUGI',(untungRugi>=0?'+ ':'- ')+fmtRp(Math.abs(untungRugi)),untungRugi>=0?'#34D399':'#FF453A');
+  }
+
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.font='22px sans-serif';
+  ctx.fillText('Dicatat dengan Catatan Petani · '+new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}),70,H-55);
+
+  canvas.toBlob(async(blob)=>{
+    if(!blob){showToast('Gagal membuat gambar.');return;}
+    const fname='panen-'+seasonName.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.png';
+    const file=new File([blob],fname,{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:'Hasil Panen '+seasonName,text:'Ringkasan panen '+seasonName+' — dicatat dengan Catatan Petani'});}
+      catch(e){/* dibatalkan pengguna */}
+    }else{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download=fname;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Gambar tersimpan ke perangkatmu.');
+    }
+  },'image/png');
+};
+// Bantu bungkus teks judul yang panjang jadi max 2 baris di kanvas
+function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,font){
+  ctx.font=font;
+  if(ctx.measureText(text).width<=maxWidth){ctx.fillText(text,x,y);return;}
+  const words=text.split(' ');
+  let line1='',i=0;
+  for(;i<words.length;i++){
+    const test=line1+(line1?' ':'')+words[i];
+    if(ctx.measureText(test).width>maxWidth)break;
+    line1=test;
+  }
+  ctx.fillText(line1,x,y);
+  const rest=words.slice(i).join(' ');
+  if(rest)ctx.fillText(rest,x,y+lineHeight);
+}
+function dynLabelY(text,maxWidth,lineHeight,baseY){
+  const c=document.createElement('canvas').getContext('2d');
+  c.font='bold 60px sans-serif';
+  return c.measureText(text).width>maxWidth?baseY+lineHeight:baseY;
 }
 
 function renderLahanList(){
@@ -2396,4 +2653,4 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 </body>
-      </html>
+  </html>

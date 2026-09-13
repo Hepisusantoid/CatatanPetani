@@ -542,6 +542,19 @@ header.glass::before{display:none;}
     </div>
   </div>
 
+  <!-- Modal: Berbagi Akses -->
+  <div class="overlay" id="ov-share">
+    <div class="sheet" style="max-height:88vh;">
+      <div class="sheet-handle"></div>
+      <h3>👥 Berbagi Akses Data</h3>
+      <div style="font-size:11.5px;color:var(--text-2);line-height:1.5;margin-bottom:14px;background:rgba(255,159,10,.08);border:1px solid rgba(255,159,10,.25);border-radius:10px;padding:10px 12px;">⚠️ Fitur ini masih tahap awal: kamu bisa mengundang orang lain untuk melihat datamu, tapi mereka <b>belum bisa membuka/menampilkannya</b> di app ini — bagian "buka data" masih dalam pengembangan. Undangan yang kamu kirim sekarang akan otomatis aktif begitu bagian itu selesai.</div>
+      <div class="sheet-field"><label>Email orang yang mau diundang</label><input type="email" id="share-email-input" placeholder="contoh@gmail.com"></div>
+      <button class="btn-primary" id="btn-send-share">Kirim Undangan</button>
+      <div id="share-lists" style="margin-top:16px;"></div>
+      <button class="btn-cancel" id="btn-close-share">Tutup</button>
+    </div>
+  </div>
+
   <!-- Modal: Bandingkan Musim -->
   <div class="overlay" id="ov-compare">
     <div class="sheet" id="compare-sheet" style="max-height:92vh;">
@@ -607,6 +620,15 @@ header.glass::before{display:none;}
       </div>
       <div class="sheet-field" id="quick-custom-wrap" style="display:none"><label>Nama Kegiatan</label><input type="text" id="quick-log-custom" placeholder="Ketik jenis kegiatan..."></div>
       <div class="sheet-field"><label>Catatan</label><textarea id="quick-log-cat" rows="3" placeholder="Tulis detail kegiatan, kondisi, atau temuan di lapangan..."></textarea></div>
+      <div class="sheet-field">
+        <label>Foto (opsional) <span style="font-size:9px;color:var(--text-2);font-weight:400;">misal untuk dokumentasi hama/penyakit</span></label>
+        <input type="file" accept="image/*" capture="environment" id="quick-log-foto" onchange="onQuickFotoSelect(this)" style="display:none;">
+        <div id="quick-foto-preview-wrap" style="display:none;position:relative;margin-top:6px;">
+          <img id="quick-foto-preview" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;">
+          <button type="button" onclick="clearQuickFoto()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;">✕</button>
+        </div>
+        <button type="button" id="btn-pick-foto" onclick="document.getElementById('quick-log-foto').click()" style="width:100%;padding:11px;border-radius:10px;background:rgba(255,255,255,.06);border:1px dashed var(--border-glass);color:var(--text-2);font-size:13px;font-weight:600;cursor:pointer;margin-top:6px;">📷 Ambil / Pilih Foto</button>
+      </div>
       <button class="btn-primary" id="btn-save-quick-log">Simpan Catatan</button>
       <button class="btn-cancel" id="btn-cancel-quick-log">Batal</button>
     </div>
@@ -644,6 +666,7 @@ header.glass::before{display:none;}
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import{getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import{getDatabase,ref,push,set,get,onValue,remove,update}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import{getStorage,ref as storageRef,uploadBytes,getDownloadURL}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // ── CONFIG ──────────────────────────────────────────
 let fbCfg;
@@ -658,6 +681,7 @@ try{
 const app=initializeApp(fbCfg);
 const auth=getAuth(app);
 const db=getDatabase(app);
+const storage=getStorage(app);
 const provider=new GoogleAuthProvider();
 
 // ── STATE ────────────────────────────────────────────
@@ -834,8 +858,14 @@ onAuthStateChanged(auth,user=>{
       photoURL:user.photoURL||'',
       lastSeen:Date.now(),
     }).catch(()=>{});
+    // Direktori email->uid, dipakai fitur "Bagikan Akses" untuk mencari akun tujuan
+    if(user.email){
+      const emailKey=user.email.toLowerCase().replace(/[.#$\[\]]/g,'_');
+      set(ref(db,`directory/${emailKey}`),uid).catch(()=>{});
+    }
     trackEvent('login_berhasil');
     setTimeout(checkTodayReminder,1500);
+    setTimeout(loadShareLists,1200);
     navigate('home');
   }else{
     uid=null;localCats={};localSeasons={};localLahans={};localPerawatan={};
@@ -894,6 +924,7 @@ function renderHeader(){
         </div>
       </div>
       <div class="hdr-actions">
+        <button class="btn-icon" id="btn-share" onclick="openShareModal()" style="width:36px;height:36px;">👥</button>
         <button class="btn-icon" id="btn-reminder" onclick="toggleReminder()" style="width:36px;height:36px;">🔔</button>
         <button class="btn-icon" id="btn-help" onclick="showOnboarding()" style="width:36px;height:36px;">❓</button>
         <img class="avatar" id="user-avatar" src="${esc(auth.currentUser?.photoURL||'')}" alt="Profil">
@@ -1097,9 +1128,13 @@ window.moveSeason=async function(seasonId,dir){
 function renderSeasonDetail(container){
   container.innerHTML=`
     <div class="sum-bar glass" id="sum-bar">
-      <div class="sec-row-hd" style="margin-bottom:0;">
+      <div class="sec-row-hd" style="margin-bottom:0;gap:6px;flex-wrap:wrap;">
         <div class="sum-bar-title" style="margin-bottom:0;">Ringkasan Musim</div>
-        <button class="btn-compare" style="background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.35);color:var(--green);" onclick="shareHarvestCard()">📤 Bagikan</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-compare" style="background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.35);color:var(--green);" onclick="shareHarvestCard()">📤 Bagikan</button>
+          <button class="btn-compare" style="background:rgba(96,165,250,.14);border-color:rgba(96,165,250,.35);color:var(--blue);" onclick="exportSeasonExcel()">📊 Excel</button>
+          <button class="btn-compare" style="background:rgba(191,90,242,.14);border-color:rgba(191,90,242,.35);color:var(--purple);" onclick="exportSeasonPdf()">🖨️ PDF</button>
+        </div>
       </div>
       <div class="sum-grid" id="sum-grid" style="margin-top:10px;"></div>
     </div>
@@ -1143,6 +1178,61 @@ function renderSeasonDetail(container){
   viewUnsubs.push(unsub);
   computeAiAnalysis();
 }
+
+// ── BERBAGI AKSES (fondasi — lihat data belum aktif) ─
+window.openShareModal=function(){
+  el('share-email-input').value='';
+  loadShareLists();
+  openOverlay('ov-share');
+};
+el('btn-close-share').addEventListener('click',()=>closeOverlay('ov-share'));
+el('btn-send-share').addEventListener('click',async()=>{
+  const email=el('share-email-input').value.trim().toLowerCase();
+  if(!email||!email.includes('@')){showToast('Masukkan email yang valid.');return;}
+  if(email===auth.currentUser?.email?.toLowerCase()){showToast('Tidak bisa mengundang email sendiri.');return;}
+  const emailKey=email.replace(/[.#$\[\]]/g,'_');
+  try{
+    const snap=await get(ref(db,`directory/${emailKey}`));
+    const targetUid=snap.val();
+    if(!targetUid){showToast('Email ini belum pernah login ke Catatan Petani. Minta dia login dulu sekali, baru undang lagi.');return;}
+    await set(ref(db,`users/${uid}/sharedWith/${targetUid}`),{email,addedAt:Date.now()});
+    await set(ref(db,`users/${targetUid}/sharedAccessFrom/${uid}`),{ownerEmail:auth.currentUser?.email||'',addedAt:Date.now()});
+    showToast('Undangan terkirim.');
+    el('share-email-input').value='';
+    loadShareLists();
+  }catch(e){
+    showToast('Gagal mengirim undangan. Kemungkinan aturan keamanan Firebase belum diatur untuk fitur ini.');
+  }
+});
+async function loadShareLists(){
+  const box=el('share-lists');if(!box||!uid)return;
+  try{
+    const[mySnap,theirSnap]=await Promise.all([
+      get(ref(db,`users/${uid}/sharedWith`)),
+      get(ref(db,`users/${uid}/sharedAccessFrom`))
+    ]);
+    const mine=mySnap.val()||{};
+    const theirs=theirSnap.val()||{};
+    let html='';
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Sudah Kamu Undang</div>`;
+    const mineEntries=Object.entries(mine);
+    if(!mineEntries.length)html+=`<div style="font-size:12px;color:var(--text-3);margin-bottom:14px;">Belum ada.</div>`;
+    else html+=mineEntries.map(([tuid,d])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-glass);font-size:12.5px;"><span>${esc(d.email)}</span><button onclick="revokeShare('${tuid}')" style="background:none;border:none;color:var(--danger);font-size:11px;cursor:pointer;">Cabut</button></div>`).join('')+'<div style="margin-bottom:10px;"></div>';
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px;">Dibagikan ke Kamu</div>`;
+    const theirEntries=Object.entries(theirs);
+    if(!theirEntries.length)html+=`<div style="font-size:12px;color:var(--text-3);">Belum ada.</div>`;
+    else html+=theirEntries.map(([ouid,d])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-glass);font-size:12.5px;"><span>${esc(d.ownerEmail)}</span><span style="color:var(--text-3);font-size:11px;">Segera bisa dibuka</span></div>`).join('');
+    box.innerHTML=html;
+  }catch(e){
+    box.innerHTML='<div style="font-size:11.5px;color:var(--text-3);">Belum bisa memuat daftar berbagi (aturan keamanan Firebase mungkin perlu diatur dulu).</div>';
+  }
+}
+window.revokeShare=async function(targetUid){
+  await remove(ref(db,`users/${uid}/sharedWith/${targetUid}`));
+  await remove(ref(db,`users/${targetUid}/sharedAccessFrom/${uid}`)).catch(()=>{});
+  showToast('Akses dicabut.');
+  loadShareLists();
+};
 
 // ── PENGINGAT (NOTIFIKASI LOKAL) ─────────────────────
 // Catatan jujur: ini BUKAN push notification server (app ini tidak punya backend).
@@ -1481,6 +1571,78 @@ function dynLabelY(text,maxWidth,lineHeight,baseY){
   c.font='bold 60px sans-serif';
   return c.measureText(text).width>maxWidth?baseY+lineHeight:baseY;
 }
+
+// ── EKSPOR DATA MUSIM (Excel/CSV & PDF) ──────────────
+function buildSeasonExportRows(){
+  const lahans=Object.entries(localLahans);
+  const header=['Nama Lahan','Luas (ha)','Varietas','Metode','Tgl Tanam','Tgl Panen','Total Panen (karung)','Bawon (karung)','Konsumsi (karung)','Dijual (karung)','Berat Dijual (kg)','Harga (Rp/kg)','Pendapatan (Rp)','Ojek (Rp/karung)','Catatan'];
+  const rows=lahans.map(([lid,l])=>{
+    const totalKarung=parseFloat(l.karung)||0;
+    const bawon=parseFloat(l.bawon)||0;
+    const konsumsi=parseFloat(l.konsumsi)||0;
+    const bersih=Math.max(totalKarung-bawon,0);
+    const dijual=Math.max(bersih-konsumsi,0);
+    return[l.name||'',l.luas||'',l.varietas||'',(Array.isArray(l.metodeList)?l.metodeList.join(', '):l.metode||''),l.tanam||'',l.panen||'',totalKarung||'',bawon||'',konsumsi||'',dijual||'',l.berat||'',l.harga||'',l.pendapatan||'',l.ojek||'',l.catatan||''];
+  });
+  return{header,rows};
+}
+window.exportSeasonExcel=function(){
+  const{header,rows}=buildSeasonExportRows();
+  if(!rows.length){showToast('Belum ada lahan untuk diekspor.');return;}
+  const esc2=v=>{
+    const s=String(v??'');
+    return/[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  };
+  const lines=[header,...rows].map(r=>r.map(esc2).join(';'));
+  const csv='\uFEFF'+lines.join('\r\n'); // BOM supaya Excel baca UTF-8 dgn benar
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const seasonName=(localSeasons[VS.seasonId]?.name||'musim').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`catatan-petani-${seasonName}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('File Excel (.csv) tersimpan ke perangkatmu.');
+  trackEvent('ekspor_excel');
+};
+window.exportSeasonPdf=function(){
+  const{header,rows}=buildSeasonExportRows();
+  if(!rows.length){showToast('Belum ada lahan untuk diekspor.');return;}
+  const seasonName=localSeasons[VS.seasonId]?.name||'Musim';
+  const catName=VS.catName||'';
+  const modalTanam=parseFloat(rawNum(String(localSeasons[VS.seasonId]?.modalTanam||'')))||0;
+  const tRp=Object.values(localLahans).reduce((a,l)=>a+(parseFloat(l.pendapatan)||0),0);
+  const untungRugi=tRp-modalTanam;
+  const win=window.open('','_blank');
+  if(!win){showToast('Popup diblokir browser. Izinkan popup untuk situs ini lalu coba lagi.');return;}
+  const rowsHtml=rows.map(r=>`<tr>${r.map(v=>`<td>${esc(String(v??''))}</td>`).join('')}</tr>`).join('');
+  const headHtml=header.map(h=>`<th>${esc(h)}</th>`).join('');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan ${esc(seasonName)}</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:24px;color:#111;}
+      h1{font-size:20px;margin-bottom:2px;}
+      h2{font-size:13px;font-weight:normal;color:#555;margin-top:0;margin-bottom:16px;}
+      table{width:100%;border-collapse:collapse;font-size:10.5px;}
+      th,td{border:1px solid #ccc;padding:5px 6px;text-align:left;}
+      th{background:#eee;}
+      .sum{display:flex;gap:18px;margin-bottom:16px;flex-wrap:wrap;}
+      .sum div{background:#f4f4f4;padding:8px 14px;border-radius:6px;font-size:12px;}
+      .sum b{display:block;font-size:15px;margin-top:2px;}
+      @media print{.no-print{display:none;}}
+    </style></head><body>
+    <h1>🌾 Catatan Petani — Laporan Musim</h1>
+    <h2>${esc(catName)} · ${esc(seasonName)} · dicetak ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</h2>
+    <div class="sum">
+      <div>Total Pendapatan<b>${fmtRp(tRp)}</b></div>
+      ${modalTanam?`<div>Modal Tanam<b>${fmtRp(modalTanam)}</b></div><div>${untungRugi>=0?'Untung':'Rugi'}<b>${fmtRp(Math.abs(untungRugi))}</b></div>`:''}
+    </div>
+    <table><thead><tr>${headHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>
+    <p class="no-print" style="margin-top:20px;color:#888;font-size:11px;">Gunakan menu Cetak (Ctrl/Cmd+P) di browser lalu pilih "Simpan sebagai PDF" untuk menyimpan file ini.</p>
+    <script>setTimeout(()=>window.print(),400);<\/script>
+    </body></html>`);
+  win.document.close();
+  trackEvent('ekspor_pdf');
+};
 
 function renderLahanList(){
   const list=el('lahan-list');if(!list)return;
@@ -1893,6 +2055,7 @@ function renderLogTimeline(lahanId,tglTanam){
           </div>
         </div>
         ${log.catatan?`<div class="log-cat">${esc(log.catatan)}</div>`:''}
+        ${log.foto?`<img src="${esc(log.foto)}" onclick="window.open('${esc(log.foto)}','_blank')" style="width:100%;max-height:160px;object-fit:cover;border-radius:9px;margin-top:8px;cursor:pointer;">`:''}
       </div>
     </div>`;
   }).join('')+`</div>`;
@@ -2376,7 +2539,41 @@ window.quickAddLog=function(lahanId){
   el('quick-log-jenis').value='Penyemprotan';
   el('quick-custom-wrap').style.display='none';
   el('quick-log-cat').value='';
+  clearQuickFoto();
   openOverlay('ov-quick-log');
+};
+let _quickFotoBlob=null;
+window.onQuickFotoSelect=function(inputEl){
+  const file=inputEl.files&&inputEl.files[0];
+  if(!file)return;
+  const img=new Image();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    img.onload=()=>{
+      // Kompres & resize maksimal 1000px sisi terpanjang, supaya hemat kuota Storage & data pengguna
+      const maxDim=1000;
+      let{width,height}=img;
+      if(width>height&&width>maxDim){height=height*maxDim/width;width=maxDim;}
+      else if(height>maxDim){width=width*maxDim/height;height=maxDim;}
+      const canvas=document.createElement('canvas');
+      canvas.width=width;canvas.height=height;
+      canvas.getContext('2d').drawImage(img,0,0,width,height);
+      canvas.toBlob(blob=>{
+        _quickFotoBlob=blob;
+        el('quick-foto-preview').src=URL.createObjectURL(blob);
+        el('quick-foto-preview-wrap').style.display='block';
+        el('btn-pick-foto').style.display='none';
+      },'image/jpeg',0.72);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+window.clearQuickFoto=function(){
+  _quickFotoBlob=null;
+  el('quick-log-foto').value='';
+  el('quick-foto-preview-wrap').style.display='none';
+  el('btn-pick-foto').style.display='block';
 };
 window.onQuickJenisChange=function(){
   const v=el('quick-log-jenis')?.value;
@@ -2391,8 +2588,22 @@ el('btn-save-quick-log').addEventListener('click',async()=>{
   const catatan=el('quick-log-cat')?.value.trim()||'';
   if(!catatan){showToast('Tulis catatan kegiatan terlebih dahulu.');el('quick-log-cat')?.focus();return;}
   if(!_quickLahanId){showToast('Data lahan tidak ditemukan.');return;}
+  const btn=el('btn-save-quick-log');
+  btn.disabled=true;btn.textContent='Menyimpan…';
   const logRef=push(ref(db,`users/${uid}/perawatan/${_quickLahanId}`));
-  await set(logRef,{tanggal:tgl,jenis,catatan,createdAt:Date.now()});
+  const logData={tanggal:tgl,jenis,catatan,createdAt:Date.now()};
+  if(_quickFotoBlob){
+    try{
+      const path=`foto-perawatan/${uid}/${_quickLahanId}/${logRef.key}.jpg`;
+      const sref=storageRef(storage,path);
+      await uploadBytes(sref,_quickFotoBlob);
+      logData.foto=await getDownloadURL(sref);
+    }catch(e){
+      showToast('Catatan disimpan, tapi foto gagal diupload (cek koneksi/Storage).');
+    }
+  }
+  await set(logRef,logData);
+  btn.disabled=false;btn.textContent='Simpan Catatan';
   closeOverlay('ov-quick-log');
   showToast('✓ Catatan perawatan disimpan.');
   if(VS.view==='jadwal'){cleanView();renderView();}

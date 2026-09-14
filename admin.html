@@ -229,6 +229,7 @@ header{background:rgba(8,4,30,.8);backdrop-filter:blur(24px);-webkit-backdrop-fi
       <button class="tab-btn" id="tab-funnel" onclick="switchTab('funnel')">🔻 Funnel</button>
       <button class="tab-btn" id="tab-users" onclick="switchTab('users')">👤 Pengguna</button>
       <button class="tab-btn" id="tab-active" onclick="switchTab('active')">🌱 Tanaman Aktif</button>
+      <button class="tab-btn" id="tab-anomali" onclick="switchTab('anomali')">⚠️ Data Mencurigakan</button>
     </div>
     <div id="content"></div>
   </div>
@@ -430,7 +431,7 @@ function computeStats(){
 // ── Tab Switching ─────────────────────────
 window.switchTab=function(tab){
   currentTab=tab;
-  ['overview','funnel','users','active'].forEach(t=>{
+  ['overview','funnel','users','active','anomali'].forEach(t=>{
     el('tab-'+t).classList.toggle('active',t===tab);
   });
   renderCurrentTab();
@@ -441,6 +442,7 @@ function renderCurrentTab(){
   else if(currentTab==='funnel')renderFunnel();
   else if(currentTab==='users')renderUsers();
   else if(currentTab==='active')renderActive();
+  else if(currentTab==='anomali')renderAnomali();
 }
 
 // ── Funnel ─────────────────────────────────
@@ -860,6 +862,78 @@ function renderActive(){
   c.appendChild(sec);
 }
 
+// ── Data Mencurigakan (Anomali) ────────────
+function computeAnomalies(){
+  const rows=[];
+  Object.entries(allData).forEach(([uid,ud])=>{
+    if(!ud)return;
+    const profile=ud.profile||{};
+    const cats=ud.categories||{};
+    const seasonsByCat=ud.seasons||{};
+    const seasonToCat={};
+    Object.entries(seasonsByCat).forEach(([catId,catSeasons])=>{
+      const c=cats[catId]||{};
+      Object.entries(catSeasons||{}).forEach(([seasonId,season])=>{
+        seasonToCat[seasonId]={catName:c.name||'(Tanpa Kategori)',seasonName:season.name||'(Musim)'};
+      });
+    });
+    const lahans=ud.lahans||{};
+    Object.entries(lahans).forEach(([seasonId,seasonLahans])=>{
+      const ctx=seasonToCat[seasonId]||{catName:'(Tidak diketahui)',seasonName:'(Tidak diketahui)'};
+      Object.entries(seasonLahans||{}).forEach(([lid,l])=>{
+        const luas=parseFloat(l.luas)||0;
+        const berat=parseFloat(l.berat)||0;
+        const pend=parseFloat(l.pendapatan)||0;
+        const totalKarung=parseFloat(l.karung)||0;
+        const bawon=parseFloat(l.bawon)||0;
+        const konsumsi=parseFloat(l.konsumsi)||0;
+        const bersih=Math.max(totalKarung-bawon,0);
+        const dijual=Math.max(bersih-konsumsi,0)||bersih;
+        const kgPerKarung=dijual?berat/dijual:0;
+        const kgPerHa=luas?berat/luas:0;
+        const rpPerHa=luas?pend/luas:0;
+        const issues=[];
+        if(luas>20)issues.push(`Luas ${fmtN(luas)} ha tidak wajar untuk 1 lahan (>20 ha)`);
+        if(kgPerHa>15000)issues.push(`Produktivitas ${fmtN(kgPerHa)} kg/ha sangat tinggi — kemungkinan Luas salah input (terlalu kecil)`);
+        if(kgPerKarung>150)issues.push(`Berat ${fmtN(kgPerKarung)} kg/karung tidak wajar (>150kg) — cek Berat Total & jumlah karung`);
+        if(kgPerKarung>0&&kgPerKarung<10)issues.push(`Berat ${fmtN(kgPerKarung)} kg/karung terlalu kecil (<10kg) — cek input`);
+        if(rpPerHa>500000000)issues.push(`Pendapatan ${fmtRp(rpPerHa)}/ha sangat tinggi — cek Harga & Berat`);
+        if(bawon+konsumsi>totalKarung&&totalKarung>0)issues.push(`Bawon+Konsumsi (${bawon+konsumsi}) melebihi Total Panen (${totalKarung})`);
+        if(issues.length)rows.push({uid,profile,catName:ctx.catName,seasonName:ctx.seasonName,lahanName:l.name||'(tanpa nama)',luas,berat,pend,issues});
+      });
+    });
+  });
+  return rows;
+}
+function fmtN(v){return(Math.round(v*100)/100).toLocaleString('id-ID');}
+function renderAnomali(){
+  const c=el('content');c.innerHTML='';
+  const rows=computeAnomalies();
+  const wrap=document.createElement('div');
+  wrap.innerHTML=`<div class="sec-hd"><span class="sec-title">⚠️ Data Mencurigakan</span><span class="sec-badge">${rows.length} Lahan</span></div>
+    <div style="font-size:11.5px;color:var(--t2);line-height:1.5;margin-bottom:14px;">Deteksi otomatis berdasarkan pola tidak wajar (luas ekstrem, produktivitas ekstrem, berat per karung ekstrem, dll). Bukan berarti pasti salah — bisa juga kasus nyata di luar kebiasaan. Cek manual sebelum menghubungi pengguna.</div>`;
+  if(!rows.length){
+    wrap.innerHTML+='<div class="empty"><div class="em">✅</div><p>Tidak ada data yang terdeteksi mencurigakan saat ini.</p></div>';
+    c.appendChild(wrap);return;
+  }
+  rows.forEach(r=>{
+    const card=document.createElement('div');
+    card.className='glass';
+    card.style.cssText='border-radius:var(--r);padding:13px 15px;margin-bottom:8px;';
+    card.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;gap:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--t1);">${esc(r.catName)} · ${esc(r.seasonName)} · ${esc(r.lahanName)}</div>
+          <div style="font-size:11px;color:var(--blue);margin-top:2px;">👤 ${esc(r.profile.name||'Pengguna')} · ${esc(r.profile.email||r.uid)}</div>
+        </div>
+      </div>
+      ${r.issues.map(iss=>`<div style="font-size:11.5px;color:#FF9F0A;background:rgba(255,159,10,.1);border-radius:7px;padding:6px 9px;margin-top:5px;">⚠️ ${esc(iss)}</div>`).join('')}
+    `;
+    wrap.appendChild(card);
+  });
+  c.appendChild(wrap);
+}
+
 // ── getFase (shared with main app) ────────
 function getFase(h,catName){
   const nm=(catName||'').toLowerCase();
@@ -893,4 +967,4 @@ document.addEventListener('DOMContentLoaded',()=>{});
 .bg-g{background:linear-gradient(90deg,#30D158,#059669);}
 </style>
 </body>
-  </html>
+</html>
